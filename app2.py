@@ -3,36 +3,16 @@ from bs4 import BeautifulSoup
 import re
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
-from nltk.stem import WordNetLemmatizer
-from nltk.corpus import wordnet
 from wordfreq import word_frequency
 
 # Download required NLTK resources (if not already available)
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
-nltk.download('wordnet')
-nltk.download('omw-1.4')
 
 # Set a threshold for what is considered "common" in the language.
 COMMON_THRESHOLD = 0.00002  # Adjust this threshold as desired
 # Keep Latin letters (including accented), remove everything else
 LETTERS_REGEX = re.compile('[^a-zA-ZÀ-ÿ]')
-
-# Initialize the lemmatizer.
-lemmatizer = WordNetLemmatizer()
-
-# Function to map NLTK POS tags to WordNet POS tags.
-def get_wordnet_pos(nltk_tag):
-    if nltk_tag.startswith('J'):
-        return wordnet.ADJ
-    elif nltk_tag.startswith('V'):
-        return wordnet.VERB
-    elif nltk_tag.startswith('N'):
-        return wordnet.NOUN
-    elif nltk_tag.startswith('R'):
-        return wordnet.ADV
-    else:
-        return wordnet.NOUN  # Default to noun if uncertain.
 
 def fetch_text_from_url(url):
     """
@@ -57,7 +37,7 @@ def parse_text(text):
     sentences = sent_tokenize(text)
 
     # Dictionary to hold each word's data:
-    # lemma -> {'count': int, 'first_sentence': str, 'lang_freq': float}
+    # word -> {'count': int, 'first_sentence': str, 'lang_freq': float}
     word_info = {}
 
     for sentence in sentences:
@@ -68,12 +48,13 @@ def parse_text(text):
         expanded_tokens = []
         for token in tokens:
             if LETTERS_REGEX.search(token):
+                # Split on hyphen; you can further filter out empty parts.
                 parts = [part for part in LETTERS_REGEX.split(token) if part]
                 expanded_tokens.extend(parts)
             else:
                 expanded_tokens.append(token)
 
-        # Tag the tokens to identify proper nouns and determine POS.
+        # Tag the tokens to identify proper nouns.
         pos_tags = nltk.pos_tag(expanded_tokens)
 
         for word, tag in pos_tags:
@@ -86,24 +67,19 @@ def parse_text(text):
             if tag in ('NNP', 'NNPS'):
                 continue
 
-            # Map the tag for lemmatization.
-            wn_tag = get_wordnet_pos(tag)
-            # Lemmatize the word.
-            lemma = lemmatizer.lemmatize(cleaned, pos=wn_tag)
-
-            # Use wordfreq to get the lemma's frequency in English.
-            freq = word_frequency(lemma, 'en')
+            # Use wordfreq to get the word's frequency in English.
+            freq = word_frequency(cleaned, 'en')
 
             # Skip words that are too common.
             if freq >= COMMON_THRESHOLD:
                 continue
 
-            # Record the lemma's first occurrence and count.
-            if lemma not in word_info:
-                word_info[lemma] = {'count': 0, 'first_sentence': sentence, 'lang_freq': freq}
-            word_info[lemma]['count'] += 1
+            # Record the word's first occurrence and count.
+            if cleaned not in word_info:
+                word_info[cleaned] = {'count': 0, 'first_sentence': sentence, 'lang_freq': freq}
+            word_info[cleaned]['count'] += 1
 
-    # Sort lemmas by their language frequency (most common among the filtered ones first).
+    # Sort words by their language frequency (from most common among the filtered words to least common).
     sorted_words = sorted(word_info.items(), key=lambda item: item[1]['lang_freq'], reverse=True)
     return sorted_words
 
