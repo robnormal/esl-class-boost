@@ -32,12 +32,10 @@ REQUIRED_NLTK_RESOURCES: List[str] = [
     'wordnet', 'omw-1.4'
 ]
 
-# Configuration
 class Config:
     """Configuration settings for word extraction."""
     # Threshold for what is considered "common" in the language
     COMMON_THRESHOLD: float = 0.00002
-
 
 
 def ensure_nltk_resources() -> None:
@@ -52,7 +50,6 @@ def ensure_nltk_resources() -> None:
             except Exception as e:
                 logger.error(f"Failed to download NLTK resource '{resource}': {e}")
                 raise
-
 
 @functools.lru_cache(maxsize=1024)
 def get_wordnet_pos(nltk_tag: str) -> Any:
@@ -76,7 +73,6 @@ def get_wordnet_pos(nltk_tag: str) -> Any:
     else:
         return wordnet.NOUN  # Default to noun if uncertain
 
-
 def expand_tokens(tokens: List[str]) -> List[str]:
     """
     Expand tokens that contain non-letter characters (like hyphens).
@@ -97,78 +93,138 @@ def expand_tokens(tokens: List[str]) -> List[str]:
     return expanded
 
 
-@functools.lru_cache(maxsize=1024)
-def get_word_frequency(lemma: str, lang: str = 'en') -> float:
+class WordProcessor:
     """
-    Get the frequency of a word in the specified language.
-
-    Args:
-        lemma: The word to check
-        lang: Language code (default: 'en' for English)
-
-    Returns:
-        The word frequency as a float
+    Class for processing and analyzing words in text.
+    Encapsulates word-level NLP operations including POS tagging,
+    lemmatization, and frequency analysis.
     """
-    try:
-        return word_frequency(lemma, lang)
-    except Exception as e:
-        logger.warning(f"Error getting frequency for word '{lemma}': {e}")
-        return 0.0
 
+    def __init__(self, text: str, lang: str = 'en', frequency_threshold: float = Config.COMMON_THRESHOLD):
+        """
+        Initialize the WordProcessor with the text to analyze.
 
-def process_sentence(sentence: str, word_info: Dict[str, Dict[str, Any]]) -> None:
-    """
-    Process a single sentence to extract and analyze words.
+        Args:
+            text: The text to analyze
+            lang: Language code (default: 'en' for English)
+            frequency_threshold: Threshold for what is considered "common" in the language
+        """
+        self.text = text
+        self.lang = lang
+        self.frequency_threshold = frequency_threshold
+        self.lemmatizer = WordNetLemmatizer()
+        self.word_info: Dict[str, Dict[str, Any]] = {}
 
-    Args:
-        sentence: The sentence to process
-        word_info: Dictionary to update with word information
-    """
-    # Tokenize the sentence into words
-    tokens = word_tokenize(sentence)
+        # Ensure NLTK resources are available
+        ensure_nltk_resources()
 
-    # Expand hyphenated tokens
-    expanded_tokens = expand_tokens(tokens)
+    @functools.lru_cache(maxsize=1024)
+    def get_word_frequency(self, lemma_word: str) -> float:
+        """
+        Get (and cache) the frequency of a word in the specified language.
 
-    # Tag the tokens to identify parts of speech
-    pos_tags = nltk.pos_tag(expanded_tokens)
+        Args:
+            lemma_word: The word to check
 
-    # Process each word
-    for word, tag in pos_tags:
-        # Skip proper nouns
-        if tag in PROPER_NOUN_TAGS:
-            continue
+        Returns:
+            The word frequency as a float
+        """
+        return word_frequency(lemma_word, self.lang)
 
-        # Clean the word
-        cleaned = re.sub(r'\W+', '', word).lower()
-        if not cleaned:
-            continue
+    def lemmatize_word(self, word: str, pos_tag: str) -> str:
+        """
+        Lemmatize a word using the appropriate POS tag.
 
-        # Get appropriate WordNet POS tag and lemmatize
-        wn_tag = get_wordnet_pos(tag)
-        lemmatizer = WordNetLemmatizer()
-        lemma = lemmatizer.lemmatize(cleaned, pos=wn_tag)
+        Args:
+            word: The word to lemmatize
+            pos_tag: The POS tag from NLTK
 
-        # Get word frequency
-        freq = get_word_frequency(lemma)
+        Returns:
+            The lemmatized word
+        """
+        return self.lemmatizer.lemmatize(word, pos=get_wordnet_pos(pos_tag))
 
-        # Skip common words
-        if freq >= Config.COMMON_THRESHOLD:
-            continue
+    def is_uncommon_word(self, lemma_word: str) -> bool:
+        """
+        Check if a word is considered uncommon based on its frequency.
 
-        # Record or update word information
-        if lemma not in word_info:
-            word_info[lemma] = {
-                'count': 0,
-                'first_sentence': sentence,
-                'lang_freq': freq
-            }
-        word_info[lemma]['count'] += 1
+        Args:
+            lemma_word: The lemmatized word to check
+
+        Returns:
+            True if the word is uncommon, False otherwise
+        """
+        return self.get_word_frequency(lemma_word) < self.frequency_threshold
+
+    def process_sentence(self, sentence: str) -> None:
+        """
+        Process a single sentence to extract and analyze words.
+
+        Args:
+            sentence: The sentence to process
+        """
+        # Tokenize the sentence into words
+        tokens = word_tokenize(sentence)
+
+        # Expand hyphenated tokens
+        expanded_tokens = expand_tokens(tokens)
+
+        # Tag the tokens to identify parts of speech
+        pos_tags = nltk.pos_tag(expanded_tokens)
+
+        # Process each word
+        for word, tag in pos_tags:
+            # Skip proper nouns
+            if tag in PROPER_NOUN_TAGS:
+                continue
+
+            # Clean the word
+            cleaned = re.sub(r'\W+', '', word).lower()
+            if not cleaned:
+                continue
+
+            # Lemmatize the word
+            lemma_word = self.lemmatize_word(cleaned, tag)
+
+            # Get word frequency and skip common words
+            if not self.is_uncommon_word(lemma_word):
+                continue
+
+            # Record or update word information
+            if lemma_word not in self.word_info:
+                self.word_info[lemma_word] = {
+                    'count': 0,
+                    'first_sentence': sentence,
+                    'lang_freq': self.get_word_frequency(lemma_word)
+                }
+            self.word_info[lemma_word]['count'] += 1
+
+    def parse_text(self) -> List[Tuple[str, Dict[str, Any]]]:
+        """
+        Parse the text to extract and analyze uncommon words.
+
+        Returns:
+            List of tuples containing lemmas and their information,
+            sorted by language frequency (highest first)
+        """
+        # Process each sentence
+        for sentence in sent_tokenize(self.text):
+            self.process_sentence(sentence)
+
+        # Sort lemmas by their language frequency (most common first)
+        sorted_words = sorted(
+            self.word_info.items(),
+            key=lambda item: item[1]['lang_freq'],
+            reverse=True
+        )
+
+        return sorted_words
 
 
 def parse_text(text: str) -> List[Tuple[str, Dict[str, Any]]]:
     """
     Parse text to extract and analyze uncommon words.
+    This function maintains backwards compatibility with the original API.
 
     Args:
         text: The text to analyze
@@ -177,24 +233,4 @@ def parse_text(text: str) -> List[Tuple[str, Dict[str, Any]]]:
         List of tuples containing lemmas and their information,
         sorted by language frequency (highest first)
     """
-    # Ensure NLTK resources are available
-    ensure_nltk_resources()
-
-    # Split the text into sentences
-    sentences = sent_tokenize(text)
-
-    # Dictionary to hold each word's data
-    word_info: Dict[str, Dict[str, Any]] = {}
-
-    # Process each sentence
-    for sentence in sentences:
-        process_sentence(sentence, word_info)
-
-    # Sort lemmas by their language frequency (most common first)
-    sorted_words = sorted(
-        word_info.items(),
-        key=lambda item: item[1]['lang_freq'],
-        reverse=True
-    )
-
-    return sorted_words
+    return WordProcessor(text).parse_text()
