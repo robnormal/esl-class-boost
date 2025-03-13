@@ -100,7 +100,7 @@ class WordProcessor:
     lemmatization, and frequency analysis.
     """
 
-    def __init__(self, text: str, lang: str = 'en', frequency_threshold: float = Config.COMMON_THRESHOLD):
+    def __init__(self, text: str, frequency_threshold: float, lang: str = 'en'):
         """
         Initialize the WordProcessor with the text to analyze.
 
@@ -221,7 +221,7 @@ class WordProcessor:
         return sorted_words
 
 
-def parse_text(text: str) -> List[Tuple[str, Dict[str, Any]]]:
+def parse_text(text: str, common_threshold = Config.COMMON_THRESHOLD) -> List[Tuple[str, Dict[str, Any]]]:
     """
     Parse text to extract and analyze uncommon words.
     This function maintains backwards compatibility with the original API.
@@ -233,4 +233,4 @@ def parse_text(text: str) -> List[Tuple[str, Dict[str, Any]]]:
         List of tuples containing lemmas and their information,
         sorted by language frequency (highest first)
     """
-    return WordProcessor(text).parse_text()
+    return WordProcessor(text, common_threshold).parse_text()
