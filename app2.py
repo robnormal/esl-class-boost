@@ -7,7 +7,9 @@ from wordfreq import word_frequency
 
 # Download required NLTK resources (if not already available)
 nltk.download('punkt')
+nltk.download('punkt_tab')
 nltk.download('averaged_perceptron_tagger')
+nltk.download('averaged_perceptron_tagger_eng')
 
 # Set a threshold for what is considered "common" in the language.
 COMMON_THRESHOLD = 0.00002  # Adjust this threshold as desired

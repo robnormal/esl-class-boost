@@ -60,6 +60,8 @@ def download_corpus():
 
 def main():
     nltk.download('averaged_perceptron_tagger')
+    nltk.download('averaged_perceptron_tagger_eng')
+    nltk.download('punkt_tab')
 
     # Sample text
     chapter = "The troop marched to battle. Emancipation freed the slaves."
@@ -81,8 +83,9 @@ def main():
     scores = tfidf_matrix[0].toarray()[0]
     word_scores = sorted(zip(feature_names, scores), key=lambda x: x[1], reverse=True)
 
-# Top 15 words
-core_words = word_scores[:15]
+    # Top 15 words
+    core_words = word_scores[:2000]
+    print(core_words)
 
 # Example usage:
 if __name__ == '__main__':
