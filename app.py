@@ -6,15 +6,18 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
 from wordfreq import word_frequency
+from typing import Dict, List, Tuple, Any
 
 # Download required NLTK resources (if not already available)
 nltk.download('punkt')
+nltk.download('punkt_tab')
 nltk.download('averaged_perceptron_tagger')
+nltk.download('averaged_perceptron_tagger_eng')
 nltk.download('wordnet')
 nltk.download('omw-1.4')
 
 # Set a threshold for what is considered "common" in the language.
-COMMON_THRESHOLD = 0.00002  # Adjust this threshold as desired
+COMMON_THRESHOLD: float = 0.00002  # Adjust this threshold as desired
 # Keep Latin letters (including accented), remove everything else
 LETTERS_REGEX = re.compile('[^a-zA-ZÀ-ÿ]')
 
@@ -22,7 +25,7 @@ LETTERS_REGEX = re.compile('[^a-zA-ZÀ-ÿ]')
 lemmatizer = WordNetLemmatizer()
 
 # Function to map NLTK POS tags to WordNet POS tags.
-def get_wordnet_pos(nltk_tag):
+def get_wordnet_pos(nltk_tag: str) -> Any:
     if nltk_tag.startswith('J'):
         return wordnet.ADJ
     elif nltk_tag.startswith('V'):
@@ -34,7 +37,7 @@ def get_wordnet_pos(nltk_tag):
     else:
         return wordnet.NOUN  # Default to noun if uncertain.
 
-def fetch_text_from_url(url):
+def fetch_text_from_url(url: str) -> str:
     """
     Fetches the webpage at the given URL and extracts the main text.
     Attempts to extract text from a div with class 'entry-content' if available;
@@ -52,20 +55,20 @@ def fetch_text_from_url(url):
         text = soup.get_text(separator=' ', strip=True)
     return text
 
-def parse_text(text):
+def parse_text(text: str) -> List[Tuple[str, Dict[str, Any]]]:
     # Split the text into sentences.
     sentences = sent_tokenize(text)
 
     # Dictionary to hold each word's data:
     # lemma -> {'count': int, 'first_sentence': str, 'lang_freq': float}
-    word_info = {}
+    word_info: Dict[str, Dict[str, Any]] = {}
 
     for sentence in sentences:
         # Tokenize the sentence into words.
         tokens = word_tokenize(sentence)
 
         # Expand tokens that are hyphenated.
-        expanded_tokens = []
+        expanded_tokens: List[str] = []
         for token in tokens:
             if LETTERS_REGEX.search(token):
                 parts = [part for part in LETTERS_REGEX.split(token) if part]
@@ -107,7 +110,7 @@ def parse_text(text):
     sorted_words = sorted(word_info.items(), key=lambda item: item[1]['lang_freq'], reverse=True)
     return sorted_words
 
-def main():
+def main() -> None:
     url = "http://www.americanyawp.com/text/18-industrial-america/"
     text = fetch_text_from_url(url)
 
