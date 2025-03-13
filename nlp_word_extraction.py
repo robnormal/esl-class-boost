@@ -12,7 +12,7 @@ from typing import Dict, List, Tuple, Any, Set
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.stem import WordNetLemmatizer
-from nltk.corpus import wordnet
+from nltk.corpus import wordnet, words
 from wordfreq import word_frequency
 
 # Configure logging
@@ -29,7 +29,7 @@ PROPER_NOUN_TAGS: Set[str] = {'NNP', 'NNPS'}
 REQUIRED_NLTK_RESOURCES: List[str] = [
     'punkt', 'punkt_tab',
     'averaged_perceptron_tagger', 'averaged_perceptron_tagger_eng',
-    'wordnet', 'omw-1.4'
+    'wordnet', 'words', 'omw-1.4'
 ]
 
 class Config:
@@ -113,9 +113,10 @@ class WordProcessor:
         self.lang = lang
         self.frequency_threshold = frequency_threshold
         self.lemmatizer = WordNetLemmatizer()
+        self.valid_words = set(words.words())
+        # Output data structure - vocabulary words with associated information
         self.word_info: Dict[str, Dict[str, Any]] = {}
 
-        # Ensure NLTK resources are available
         ensure_nltk_resources()
 
     @functools.lru_cache(maxsize=1024)
@@ -156,6 +157,9 @@ class WordProcessor:
         """
         return self.get_word_frequency(lemma_word) < self.frequency_threshold
 
+    def is_valid_word(self, lemma_word: str) -> bool:
+        return lemma_word in self.valid_words
+
     def process_sentence(self, sentence: str) -> None:
         """
         Process a single sentence to extract and analyze words.
@@ -187,7 +191,7 @@ class WordProcessor:
             lemma_word = self.lemmatize_word(cleaned, tag)
 
             # Get word frequency and skip common words
-            if not self.is_uncommon_word(lemma_word):
+            if not self.is_uncommon_word(lemma_word) or not self.is_valid_word(lemma_word):
                 continue
 
             # Record or update word information
