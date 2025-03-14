@@ -1,0 +1,7 @@
+pytest
+pytest-cov
+requests
+nltk
+wordfreq
+beautifulsoup4
+openai
