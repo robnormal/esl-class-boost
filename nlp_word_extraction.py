@@ -93,6 +93,16 @@ def expand_tokens(tokens: List[str]) -> List[str]:
     return expanded
 
 
+class Language:
+    """
+    Represents the language and standards for processing text.
+    """
+    def __init__(self, lang: str, frequency_threshold: float):
+        self.lang = lang
+        self.frequency_threshold = frequency_threshold
+        self.lemmatizer = WordNetLemmatizer()
+
+
 class WordProcessor:
     """
     Class for processing and analyzing words in text.
@@ -100,19 +110,18 @@ class WordProcessor:
     lemmatization, and frequency analysis.
     """
 
-    def __init__(self, text: str, frequency_threshold: float, lang: str = 'en'):
+    def __init__(self, text: str, language: Language):
         """
         Initialize the WordProcessor with the text to analyze.
 
         Args:
             text: The text to analyze
-            lang: Language code (default: 'en' for English)
-            frequency_threshold: Threshold for what is considered "common" in the language
+            language: The Language object according to which we will process the text
         """
         self.text = text
-        self.lang = lang
-        self.frequency_threshold = frequency_threshold
-        self.lemmatizer = WordNetLemmatizer()
+        self.lang = language.lang
+        self.frequency_threshold = language.frequency_threshold
+        self.lemmatizer = language.lemmatizer
         self.valid_words = set(words.words())
         # Output data structure - vocabulary words with associated information
         self.word_info: Dict[str, Dict[str, Any]] = {}
@@ -131,6 +140,7 @@ class WordProcessor:
             The word frequency as a float
         """
         return word_frequency(lemma_word, self.lang)
+        # return word_frequency(lemma_word, self.lang)
 
     def lemmatize_word(self, word: str, pos_tag: str) -> str:
         """
@@ -232,9 +242,11 @@ def parse_text(text: str, common_threshold = Config.COMMON_THRESHOLD) -> List[Tu
 
     Args:
         text: The text to analyze
+        common_threshold: Words more frequent than this in their language will be ignored
 
     Returns:
         List of tuples containing lemmas and their information,
         sorted by language frequency (highest first)
     """
-    return WordProcessor(text, common_threshold).parse_text()
+    language = Language('en', common_threshold)
+    return WordProcessor(text, language).parse_text()
