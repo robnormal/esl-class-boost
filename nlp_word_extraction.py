@@ -110,20 +110,19 @@ class WordProcessor:
     lemmatization, and frequency analysis.
     """
 
-    def __init__(self, text: str, language: Language):
+    def __init__(self, paragraphs: List[str], language: Language):
         """
-        Initialize the WordProcessor with the text to analyze.
+        Initialize the WordProcessor with multiple paragraphs.
 
         Args:
-            text: The text to analyze
+            paragraphs: List of text paragraphs to analyze
             language: The Language object according to which we will process the text
         """
-        self.text = text
+        self.paragraphs = paragraphs  # Store paragraphs as a list
         self.lang = language.lang
         self.frequency_threshold = language.frequency_threshold
         self.lemmatizer = language.lemmatizer
         self.valid_words = set(words.words())
-        # Output data structure - vocabulary words with associated information
         self.word_info: Dict[str, Dict[str, Any]] = {}
 
         ensure_nltk_resources()
@@ -140,7 +139,6 @@ class WordProcessor:
             The word frequency as a float
         """
         return word_frequency(lemma_word, self.lang)
-        # return word_frequency(lemma_word, self.lang)
 
     def lemmatize_word(self, word: str, pos_tag: str) -> str:
         """
@@ -170,62 +168,53 @@ class WordProcessor:
     def is_valid_word(self, lemma_word: str) -> bool:
         return lemma_word in self.valid_words
 
-    def process_sentence(self, sentence: str) -> None:
+    def process_sentence(self, sentence: str, paragraph_index: int) -> None:
         """
         Process a single sentence to extract and analyze words.
 
         Args:
             sentence: The sentence to process
+            paragraph_index: The index of the paragraph this sentence belongs to
         """
-        # Tokenize the sentence into words
         tokens = word_tokenize(sentence)
-
-        # Expand hyphenated tokens
         expanded_tokens = expand_tokens(tokens)
-
-        # Tag the tokens to identify parts of speech
         pos_tags = nltk.pos_tag(expanded_tokens)
 
-        # Process each word
         for word, tag in pos_tags:
-            # Skip proper nouns
             if tag in PROPER_NOUN_TAGS:
                 continue
 
-            # Clean the word
             cleaned = re.sub(r'\W+', '', word).lower()
             if not cleaned:
                 continue
 
-            # Lemmatize the word
             lemma_word = self.lemmatize_word(cleaned, tag)
 
-            # Get word frequency and skip common words
             if not self.is_uncommon_word(lemma_word) or not self.is_valid_word(lemma_word):
                 continue
 
-            # Record or update word information
             if lemma_word not in self.word_info:
                 self.word_info[lemma_word] = {
                     'count': 0,
                     'first_sentence': sentence,
-                    'lang_freq': self.get_word_frequency(lemma_word)
+                    'first_paragraph': paragraph_index,  # Track first paragraph appearance
+                    'lang_freq': self.get_word_frequency(lemma_word),
                 }
+
             self.word_info[lemma_word]['count'] += 1
 
     def parse_text(self) -> List[Tuple[str, Dict[str, Any]]]:
         """
-        Parse the text to extract and analyze uncommon words.
+        Parse the paragraphs to extract and analyze uncommon words.
 
         Returns:
             List of tuples containing lemmas and their information,
             sorted by language frequency (highest first)
         """
-        # Process each sentence
-        for sentence in sent_tokenize(self.text):
-            self.process_sentence(sentence)
+        for paragraph_index, paragraph in enumerate(self.paragraphs):
+            for sentence in sent_tokenize(paragraph):
+                self.process_sentence(sentence, paragraph_index)
 
-        # Sort lemmas by their language frequency (most common first)
         sorted_words = sorted(
             self.word_info.items(),
             key=lambda item: item[1]['lang_freq'],
@@ -234,6 +223,21 @@ class WordProcessor:
 
         return sorted_words
 
+
+def parse_paragraphs(paragraphs: List[str], common_threshold=Config.COMMON_THRESHOLD) -> List[Tuple[str, Dict[str, Any]]]:
+    """
+    Parse paragraphs to extract and analyze uncommon words.
+
+    Args:
+        paragraphs: List of text paragraphs
+        common_threshold: Words more frequent than this in their language will be ignored
+
+    Returns:
+        List of tuples containing lemmas and their information,
+        sorted by language frequency (highest first)
+    """
+    language = Language('en', common_threshold)
+    return WordProcessor(paragraphs, language).parse_text()
 
 def parse_text(text: str, common_threshold = Config.COMMON_THRESHOLD) -> List[Tuple[str, Dict[str, Any]]]:
     """
@@ -248,5 +252,4 @@ def parse_text(text: str, common_threshold = Config.COMMON_THRESHOLD) -> List[Tu
         List of tuples containing lemmas and their information,
         sorted by language frequency (highest first)
     """
-    language = Language('en', common_threshold)
-    return WordProcessor(text, language).parse_text()
+    return parse_paragraphs([text], common_threshold)

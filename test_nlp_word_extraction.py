@@ -1,7 +1,7 @@
 import pytest
 import nltk
 from nlp_word_extraction import (
-    expand_tokens, get_wordnet_pos, WordProcessor, Language, parse_text
+    expand_tokens, get_wordnet_pos, WordProcessor, Language, parse_paragraphs
 )
 from unittest.mock import patch, MagicMock
 
@@ -31,7 +31,12 @@ def language(mock_lemmatizer):
 
 @pytest.fixture
 def word_processor(language):
-    return WordProcessor("This is a simple test sentence.", language)
+    paragraphs = [
+        "This is a simple test sentence.",
+        "The scientist discovered a new element.",
+        "An astronaut walked on the moon."
+    ]
+    return WordProcessor(paragraphs, language)
 
 @patch("nlp_word_extraction.word_frequency", return_value=0.00001)
 def test_is_uncommon_word(_mock_word_frequency, word_processor):
@@ -43,17 +48,22 @@ def test_is_valid_word(_mock_words, word_processor):
     assert word_processor.is_valid_word("xyzabc") is False
 
 def test_lemmatize_word(word_processor):
-    assert word_processor.lemmatize_word("running", "VB") == "run" # Mocked
-    assert word_processor.lemmatize_word("better", "JJ") == "better" # Mocked generically
+    assert word_processor.lemmatize_word("running", "VB") == "run"  # Mocked
+    assert word_processor.lemmatize_word("better", "JJ") == "better"  # Mocked generically
 
 def test_process_sentence(word_processor):
-    word_processor.process_sentence("The scientist discovered a new element.")
-    # Ensure it processed the sentence without relying on internals
-    assert isinstance(word_processor.parse_text(), list)
+    word_processor.process_sentence("The scientist discovered a new element.", paragraph_index=1)
+    results = word_processor.parse_text()
+    assert isinstance(results, list)
+    assert any(entry[1].get("first_paragraph") == 1 for entry in results)  # Ensure paragraph index tracking
 
 def test_parse_text():
-    text = "The astronaut walked on the moon. The scientist discovered a new element."
-    results = parse_text(text)
+    paragraphs = [
+        "The astronaut walked on the moon.",
+        "The scientist discovered a new element."
+    ]
+    results = parse_paragraphs(paragraphs)
     assert isinstance(results, list)
     assert all(isinstance(entry, tuple) and len(entry) == 2 for entry in results)
     assert all("count" in entry[1] for entry in results)
+    assert all("first_paragraph" in entry[1] for entry in results)  # Ensure first paragraph is recorded
