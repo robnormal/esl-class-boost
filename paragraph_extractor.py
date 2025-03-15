@@ -1,5 +1,5 @@
 import requests
-from bs4 import BeautifulSoup, ResultSet, Tag
+from bs4 import BeautifulSoup
 from typing import List
 
 
@@ -13,7 +13,7 @@ def naive_paragraph_extract(container) -> List[str]:
 
     return paragraphs
 
-def fetch_content_from_url(url: str, selector: str) -> ResultSet[Tag]:
+def fetch_content_from_url(url: str, selector: str) -> BeautifulSoup:
     response = requests.get(url)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -23,7 +23,7 @@ def fetch_content_from_url(url: str, selector: str) -> ResultSet[Tag]:
     if main:
         return main
     else:
-        return soup.select('body')
+        return soup.select_one('body')
 
 def fetch_paragraphs_from_url(url: str, selector: str) -> List[str]:
     """

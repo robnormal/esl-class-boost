@@ -1,5 +1,3 @@
-import logging
-
 from nlp_word_extraction import parse_text
 from paragraph_extractor import fetch_paragraphs_from_url
 from paragraph_summarizer import summarize_paragraph
