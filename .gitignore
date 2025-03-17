@@ -174,15 +174,15 @@ cython_debug/
 # React
 
 # dependencies
-/backend/node_modules
-/backend/.pnp
-/backend/*.pnp.js
+/frontend/node_modules
+/frontend/.pnp
+/frontend/*.pnp.js
 
 # testing
-/backend/coverage
+/frontend/coverage
 
 # production
-/backend/build
+/frontend/build
 
 # misc
 .DS_Store
