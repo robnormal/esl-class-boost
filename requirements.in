@@ -5,3 +5,5 @@ nltk
 wordfreq
 beautifulsoup4
 openai
+flask
+flask_cors
