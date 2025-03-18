@@ -1,60 +1,88 @@
+import uuid
+import boto3
 from flask import Flask, request, jsonify
-from flask_cors import CORS
-import os
-from werkzeug.utils import secure_filename
 
+# Flask app setup
 app = Flask(__name__)
-CORS(app)  # Enable Cross-Origin Resource Sharing
 
-UPLOAD_FOLDER = "uploads"
-ALLOWED_EXTENSIONS = {"txt", "pdf", "docx", "html", "md"}
+# AWS Configuration
+AWS_REGION = "us-east-1"
+DYNAMODB_TABLE_NAME = "SubmissionsTable"
+DYNAMODB_VOCAB_TABLE = "VocabularyTable"
+S3_BUCKET_NAME = "your-s3-bucket"
+S3_BASE_URL = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com"
 
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+# Initialize AWS Clients
+dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
+s3_client = boto3.client("s3", region_name=AWS_REGION)
 
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+# Reference DynamoDB tables
+submissions_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+vocab_table = dynamodb.Table(DYNAMODB_VOCAB_TABLE)
 
-def allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+@app.route("/submit-url", methods=["POST"])
+def submit_url():
+    """Stores the submitted file URL in DynamoDB."""
+    data = request.get_json()
+    if "file_url" not in data:
+        return jsonify({"error": "Missing 'file_url' in request body"}), 400
 
-@app.route("/process-url", methods=["POST"])
-def process_url():
-    """Acknowledge URL submission but discard the content."""
-    data = request.json
-    url = data.get("url")
-    if not url:
-        return jsonify({"error": "No URL provided"}), 400
+    file_id = str(uuid.uuid4())
+    file_url = data["file_url"]
 
-    return jsonify({"message": "URL received", "url": url}), 200
+    try:
+        submissions_table.put_item(
+            Item={
+                "file_id": file_id,
+                "file_url": file_url
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": f"DynamoDB error: {str(e)}"}), 500
 
-@app.route("/process-text", methods=["POST"])
-def process_text():
-    """Acknowledge text submission but discard the content."""
-    data = request.json
-    text = data.get("text")
-    if not text:
-        return jsonify({"error": "No text provided"}), 400
+    return jsonify({"file_id": file_id, "file_url": file_url, "message": "Submission successful."})
 
-    return jsonify({"message": "Text received", "text_length": len(text)}), 200
+@app.route("/files", methods=["GET"])
+def list_files():
+    """Returns the list of submitted file URLs from DynamoDB."""
+    try:
+        response = submissions_table.scan()
+        files = response.get("Items", [])
+    except Exception as e:
+        return jsonify({"error": f"DynamoDB error: {str(e)}"}), 500
 
-@app.route("/upload-file", methods=["POST"])
-def upload_file():
-    """Acknowledge file upload but discard the file."""
-    if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
+    return jsonify(files)
 
-    file = request.files["file"]
+@app.route("/files/<file_id>/summaries", methods=["GET"])
+def get_summaries(file_id):
+    """Fetches paragraph summaries from an S3 file."""
+    s3_key = f"summaries/{file_id}.txt"
 
-    if file.filename == "":
-        return jsonify({"error": "No selected file"}), 400
+    try:
+        response = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=s3_key)
+        summaries = response["Body"].read().decode("utf-8").split("\n")
+    except s3_client.exceptions.NoSuchKey:
+        return jsonify({"file_id": file_id, "error": "Summaries not found"}), 404
 
-    if not allowed_file(file.filename):
-        return jsonify({"error": "File type not allowed"}), 400
+    return jsonify({"file_id": file_id, "summaries": summaries})
 
-    # Acknowledge receipt but discard the file
-    filename = secure_filename(file.filename)
+@app.route("/files/<file_id>/vocabulary", methods=["GET"])
+def get_vocabulary(file_id):
+    """Returns extracted vocabulary words per paragraph from DynamoDB."""
+    try:
+        response = vocab_table.get_item(Key={"file_id": file_id})
+        vocab_data = response.get("Item", {}).get("vocabulary", {})
+    except Exception as e:
+        return jsonify({"file_id": file_id, "error": f"DynamoDB error: {str(e)}"}), 500
 
-    return jsonify({"message": "File received", "filename": filename}), 200
+    return jsonify({"file_id": file_id, "vocabulary": vocab_data})
+
+# Lambda Entry Point
+def lambda_handler(event, context):
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app)
+
+    return app(event, context)
 
 if __name__ == "__main__":
     app.run(debug=True)
