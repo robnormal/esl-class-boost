@@ -1,7 +1,3 @@
-provider "aws" {
-  region = "us-east-2"  # Change to your desired region
-}
-
 # 1. Users Table
 resource "aws_dynamodb_table" "users_table" {
   name         = "Users"

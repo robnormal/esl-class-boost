@@ -1,7 +1,3 @@
-provider "aws" {
-  region = "us-east-2"
-}
-
 # S3 bucket for website hosting
 resource "aws_s3_bucket" "website" {
   bucket = "rr-history-learning-website"
