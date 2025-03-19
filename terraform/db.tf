@@ -17,10 +17,10 @@ resource "aws_dynamodb_table" "users_table" {
 
   # GSI for email lookups
   global_secondary_index {
-    name               = "email-index"
-    hash_key           = "email"
-    range_key          = "userId"
-    projection_type    = "ALL"
+    name            = "email-index"
+    hash_key        = "email"
+    range_key       = "userId"
+    projection_type = "ALL"
   }
 
   tags = {
@@ -52,10 +52,10 @@ resource "aws_dynamodb_table" "submissions_table" {
 
   # GSI for getting all submissions for a user in descending order
   global_secondary_index {
-    name               = "user-submissions-index"
-    hash_key           = "userId"
-    range_key          = "createdAt"
-    projection_type    = "ALL"
+    name            = "user-submissions-index"
+    hash_key        = "userId"
+    range_key       = "createdAt"
+    projection_type = "ALL"
   }
 
   tags = {

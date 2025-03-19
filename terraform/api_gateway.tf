@@ -21,16 +21,16 @@ resource "aws_api_gateway_authorizer" "cognito" {
 resource "aws_api_gateway_resource" "proxy" {
   rest_api_id = aws_api_gateway_rest_api.api.id
   parent_id   = aws_api_gateway_rest_api.api.root_resource_id
-  path_part   = "{proxy+}"  # This creates a catch-all proxy resource
+  path_part   = "{proxy+}" # This creates a catch-all proxy resource
 }
 
 # API Gateway method for the proxy resource
 resource "aws_api_gateway_method" "proxy" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.proxy.id
-  http_method   = "ANY"  # Catches all HTTP methods
-  authorization_type = "COGNITO_USER_POOLS"
-  authorizer_id      = aws_api_gateway_authorizer.cognito.id
+  http_method   = "ANY" # Catches all HTTP methods
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
 }
 
 # Connect the Lambda function to the API Gateway method
@@ -39,7 +39,7 @@ resource "aws_api_gateway_integration" "lambda_integration" {
   resource_id = aws_api_gateway_resource.proxy.id
   http_method = aws_api_gateway_method.proxy.http_method
 
-  integration_http_method = "POST"  # Lambda always requires POST
+  integration_http_method = "POST" # Lambda always requires POST
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.flask_lambda.invoke_arn
 }
@@ -49,8 +49,8 @@ resource "aws_api_gateway_method" "proxy_root" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_rest_api.api.root_resource_id
   http_method   = "ANY"
-  authorization_type = "COGNITO_USER_POOLS"
-  authorizer_id      = aws_api_gateway_authorizer.cognito.id
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
 }
 
 resource "aws_api_gateway_integration" "lambda_root" {
@@ -71,7 +71,7 @@ resource "aws_api_gateway_deployment" "api_deployment" {
   ]
 
   rest_api_id = aws_api_gateway_rest_api.api.id
-  stage_name  = var.stage_name  # You can change this or use variables
+  stage_name  = var.stage_name # You can change this or use variables
 }
 
 # Permission for API Gateway to invoke Lambda
@@ -90,7 +90,7 @@ resource "aws_api_gateway_method" "options_method" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.proxy.id
   http_method   = "OPTIONS"
-  authorization_type = "NONE"
+  authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "options_integration" {

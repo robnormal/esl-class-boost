@@ -41,6 +41,6 @@ resource "aws_s3_bucket_website_configuration" "website" {
   }
 
   error_document {
-    key = "index.html"  # For SPA routing, send all errors to index.html
+    key = "index.html" # For SPA routing, send all errors to index.html
   }
 }
