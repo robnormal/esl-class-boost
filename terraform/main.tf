@@ -1,3 +1,7 @@
+# Add these data sources to get current region and account ID
+data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
+
 provider "aws" {
   region = "us-east-2"
 }
@@ -12,6 +16,11 @@ variable "stage_name" {
   default = "prod"
 }
 
-###
-# Service IAM policies (access permissions)
-###
+# Define common tags as locals
+locals {
+  common_tags = {
+    Project     = "history-learning"
+    Environment = var.stage_name
+    ManagedBy   = "terraform"
+  }
+}

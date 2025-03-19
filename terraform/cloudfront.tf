@@ -3,22 +3,27 @@ resource "aws_cloudfront_origin_access_identity" "oai" {
   comment = "OAI for history-learning website"
 }
 
-# S3 bucket policy allowing CloudFront access
-resource "aws_s3_bucket_policy" "website" {
-  bucket = aws_s3_bucket.website.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          AWS = "${aws_cloudfront_origin_access_identity.oai.iam_arn}"
-        }
-        Action   = "s3:GetObject"
-        Resource = "${aws_s3_bucket.website.arn}/*"
-      }
-    ]
-  })
+# Create a new cache policy for your CloudFront distribution
+resource "aws_cloudfront_cache_policy" "website_cache_policy" {
+  name        = "WebsiteCachePolicy"
+  comment     = "Cache policy for history learning website"
+  default_ttl = 3600
+  max_ttl     = 86400
+  min_ttl     = 0
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    cookies_config {
+      cookie_behavior = "none"
+    }
+    headers_config {
+      header_behavior = "none"
+    }
+    query_strings_config {
+      query_string_behavior = "none"
+    }
+    enable_accept_encoding_brotli = true
+    enable_accept_encoding_gzip   = true
+  }
 }
 
 # Since we're using CloudFront's default domain, we don't need a custom certificate
@@ -37,6 +42,7 @@ resource "aws_cloudfront_distribution" "website" {
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = "index.html"
+  tags                = local.common_tags
 
   # No aliases needed when using the default CloudFront domain
 
@@ -46,17 +52,10 @@ resource "aws_cloudfront_distribution" "website" {
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "S3-${aws_s3_bucket.website.bucket}"
 
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
-      }
-    }
+    cache_policy_id = aws_cloudfront_cache_policy.website_cache_policy.id
 
     viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
+    compress               = true
   }
 
   # SPA routing - send all non-file paths to index.html

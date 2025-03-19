@@ -1,7 +1,8 @@
 # API Gateway REST API
 resource "aws_api_gateway_rest_api" "api" {
-  name        = "flask-api"
+  name        = "history-learning-api"
   description = "API Gateway for Flask Lambda"
+  tags        = local.common_tags
 
   endpoint_configuration {
     types = ["REGIONAL"]
@@ -10,7 +11,7 @@ resource "aws_api_gateway_rest_api" "api" {
 
 # API Gateway authorizer
 resource "aws_api_gateway_authorizer" "cognito" {
-  name          = "CognitoAuthorizer"
+  name          = "cognito-authorizer"
   rest_api_id   = aws_api_gateway_rest_api.api.id
   type          = "COGNITO_USER_POOLS"
   provider_arns = [aws_cognito_user_pool.user_pool.arn]
@@ -105,28 +106,70 @@ resource "aws_api_gateway_integration" "options_integration" {
   }
 }
 
-resource "aws_api_gateway_method_response" "options_response" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.proxy.id
-  http_method = aws_api_gateway_method.options_method.http_method
-  status_code = "200"
-
-  response_parameters = {
+# Define locals for reusable values
+locals {
+  # Common response parameters for method responses
+  method_response_parameters = {
     "method.response.header.Access-Control-Allow-Headers" = true
     "method.response.header.Access-Control-Allow-Methods" = true
     "method.response.header.Access-Control-Allow-Origin"  = true
   }
-}
 
-resource "aws_api_gateway_integration_response" "options_integration_response" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.proxy.id
-  http_method = aws_api_gateway_method.options_method.http_method
-  status_code = aws_api_gateway_method_response.options_response.status_code
-
-  response_parameters = {
+  # Common response parameters for integration responses
+  integration_response_parameters = {
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
     "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,PUT,DELETE,OPTIONS'"
     "method.response.header.Access-Control-Allow-Origin"  = "'https://${aws_cloudfront_distribution.website.domain_name}'"
   }
+}
+
+# For the OPTIONS method
+resource "aws_api_gateway_method_response" "options_response" {
+  rest_api_id         = aws_api_gateway_rest_api.api.id
+  resource_id         = aws_api_gateway_resource.proxy.id
+  http_method         = aws_api_gateway_method.options_method.http_method
+  status_code         = "200"
+  response_parameters = local.method_response_parameters
+}
+
+resource "aws_api_gateway_integration_response" "options_integration_response" {
+  rest_api_id         = aws_api_gateway_rest_api.api.id
+  resource_id         = aws_api_gateway_resource.proxy.id
+  http_method         = aws_api_gateway_method.options_method.http_method
+  status_code         = aws_api_gateway_method_response.options_response.status_code
+  response_parameters = local.integration_response_parameters
+}
+
+# For the proxy method
+resource "aws_api_gateway_method_response" "proxy_response" {
+  rest_api_id         = aws_api_gateway_rest_api.api.id
+  resource_id         = aws_api_gateway_resource.proxy.id
+  http_method         = aws_api_gateway_method.proxy.http_method
+  status_code         = "200"
+  response_parameters = local.method_response_parameters
+}
+
+resource "aws_api_gateway_integration_response" "proxy_integration_response" {
+  rest_api_id         = aws_api_gateway_rest_api.api.id
+  resource_id         = aws_api_gateway_resource.proxy.id
+  http_method         = aws_api_gateway_method.proxy.http_method
+  status_code         = aws_api_gateway_method_response.proxy_response.status_code
+  response_parameters = local.integration_response_parameters
+}
+
+# For the root method
+resource "aws_api_gateway_method_response" "proxy_root_response" {
+  rest_api_id         = aws_api_gateway_rest_api.api.id
+  resource_id         = aws_api_gateway_rest_api.api.root_resource_id
+  http_method         = aws_api_gateway_method.proxy_root.http_method
+  status_code         = "200"
+  response_parameters = local.method_response_parameters
+}
+
+resource "aws_api_gateway_integration_response" "proxy_root_integration_response" {
+  rest_api_id         = aws_api_gateway_rest_api.api.id
+  resource_id         = aws_api_gateway_rest_api.api.root_resource_id
+  http_method         = aws_api_gateway_method.proxy_root.http_method
+  status_code         = aws_api_gateway_method_response.proxy_root_response.status_code
+  response_parameters = local.integration_response_parameters
 }

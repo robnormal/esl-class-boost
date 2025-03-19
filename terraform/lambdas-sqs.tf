@@ -4,10 +4,11 @@
 
 # Lambda function for the Flask application
 resource "aws_lambda_function" "flask_lambda" {
-  function_name = "flask-api-lambda"
+  function_name = "history-learning-api-lambda"
   runtime       = "python3.13"
   handler       = "app.lambda_handler" # Update based on your Flask app structure
   filename      = "flask_lambda.zip"   # You'll need to create this deployment package
+  tags          = local.common_tags
 
   # You can also use S3 for larger deployment packages
   # s3_bucket     = "my-lambda-deployments"
@@ -32,6 +33,7 @@ resource "aws_lambda_function" "paragraphs_lambda" {
   handler       = "index.handler"
   runtime       = "python3.13"
   filename      = "paragraphs_lambda.zip" # Ensure this file is packaged correctly
+  tags          = local.common_tags
 }
 
 resource "aws_lambda_function" "vocabulary_lambda" {
@@ -40,6 +42,7 @@ resource "aws_lambda_function" "vocabulary_lambda" {
   handler       = "index.handler"
   runtime       = "python3.13"
   filename      = "vocabulary_lambda.zip"
+  tags          = local.common_tags
 }
 
 resource "aws_lambda_function" "summaries_lambda" {
@@ -48,6 +51,7 @@ resource "aws_lambda_function" "summaries_lambda" {
   handler       = "index.handler"
   runtime       = "python3.13"
   filename      = "summaries_lambda.zip"
+  tags          = local.common_tags
 }
 
 ##
@@ -56,10 +60,12 @@ resource "aws_lambda_function" "summaries_lambda" {
 
 resource "aws_sqs_queue" "vocabulary_queue" {
   name = "history-learning-vocabulary-queue"
+  tags = local.common_tags
 }
 
 resource "aws_sqs_queue" "summaries_queue" {
   name = "history-learning-summaries-queue"
+  tags = local.common_tags
 }
 
 ##
@@ -89,7 +95,7 @@ resource "aws_lambda_event_source_mapping" "summaries_sqs_trigger" {
 # IAM roles (permissions)
 ##
 resource "aws_iam_role" "lambda_role" {
-  name = "flask-lambda-role"
+  name = "lambda-with-s3-sqs-access-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -100,6 +106,35 @@ resource "aws_iam_role" "lambda_role" {
         Principal = {
           Service = "lambda.amazonaws.com"
         }
+      }
+    ]
+  })
+}
+
+# Allow Lambdas to access any table in DynamoDB
+resource "aws_iam_policy" "lambda_dynamodb_policy" {
+  name        = "lambda-dynamodb-access-policy"
+  description = "Allows Lambda functions to access all DynamoDB tables in the account"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:BatchGetItem",
+          "dynamodb:BatchWriteItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ],
+        Resource = [
+          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/*",
+          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/*/index/*"
+        ]
       }
     ]
   })
@@ -119,4 +154,9 @@ resource "aws_iam_role_policy_attachment" "lambda_s3_access" {
 resource "aws_iam_role_policy_attachment" "lambda_sqs_access" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_dynamodb_access" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
 }

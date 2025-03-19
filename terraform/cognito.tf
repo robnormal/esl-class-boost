@@ -1,6 +1,6 @@
 # Cognito User Pool with admin-only account creation
 resource "aws_cognito_user_pool" "user_pool" {
-  name                     = "rhr-history-learning-cognito-user-pool"
+  name                     = "history-learning-cognito-user-pool"
   auto_verified_attributes = ["email"]
 
   # Disable self-registration
@@ -11,7 +11,7 @@ resource "aws_cognito_user_pool" "user_pool" {
 
 # Cognito User Pool Client
 resource "aws_cognito_user_pool_client" "user_pool_client" {
-  name            = "rhr-history-learning-cognito-user-pool-client"
+  name            = "history-learning-cognito-user-pool-client"
   user_pool_id    = aws_cognito_user_pool.user_pool.id
   generate_secret = false
 

@@ -21,17 +21,17 @@ output "cognito_user_pool_id" {
 output "cognito_user_pool_client_id" {
   value = aws_cognito_user_pool_client.user_pool_client.id
 }
-
-# This output will show the commands to deploy your react app
-output "deployment_commands" {
-  value = <<-EOT
-    # Build your React app
-    npm run build
-
-    # Sync to S3
-    aws s3 sync build/ s3://${aws_s3_bucket.website.bucket} --delete
-
-    # Invalidate CloudFront cache
-    aws cloudfront create-invalidation --distribution-id ${aws_cloudfront_distribution.website.id} --paths "/*"
-  EOT
-}
+#
+# # This output will show the commands to deploy your react app
+# output "deployment_commands" {
+#   value = <<-EOT
+#     # Build your React app
+#     npm run build
+#
+#     # Sync to S3
+#     aws s3 sync build/ s3://${aws_s3_bucket.website.bucket} --delete
+#
+#     # Invalidate CloudFront cache
+#     aws cloudfront create-invalidation --distribution-id ${aws_cloudfront_distribution.website.id} --paths "/*"
+#   EOT
+# }

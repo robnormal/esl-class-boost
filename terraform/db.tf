@@ -23,9 +23,9 @@ resource "aws_dynamodb_table" "users_table" {
     projection_type = "ALL"
   }
 
-  tags = {
+  tags = merge(local.common_tags, {
     Name = "Users-Table"
-  }
+  })
 }
 
 # 2. Submissions Table
@@ -58,9 +58,9 @@ resource "aws_dynamodb_table" "submissions_table" {
     projection_type = "ALL"
   }
 
-  tags = {
+  tags = merge(local.common_tags, {
     Name = "Submissions-Table"
-  }
+  })
 }
 
 # 3. Summaries Table
@@ -80,9 +80,9 @@ resource "aws_dynamodb_table" "summaries_table" {
     type = "S"
   }
 
-  tags = {
+  tags = merge(local.common_tags, {
     Name = "Summaries-Table"
-  }
+  })
 }
 
 # 4. Vocabulary Table
@@ -102,7 +102,7 @@ resource "aws_dynamodb_table" "vocabulary_table" {
     type = "S"
   }
 
-  tags = {
+  tags = merge(local.common_tags, {
     Name = "Vocabulary-Table"
-  }
+  })
 }
