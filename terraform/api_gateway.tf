@@ -1,53 +1,3 @@
-# Lambda function for the Flask application
-resource "aws_lambda_function" "flask_lambda" {
-  function_name = "flask-api-lambda"
-  runtime       = "python3.9"  # Choose appropriate runtime
-  handler       = "app.lambda_handler"  # Update based on your Flask app structure
-
-  # The path to your Lambda deployment package
-  filename      = "lambda_function.zip"  # You'll need to create this deployment package
-
-  # You can also use S3 for larger deployment packages
-  # s3_bucket     = "my-lambda-deployments"
-  # s3_key        = "lambda_function.zip"
-
-  role          = aws_iam_role.lambda_role.arn
-
-  environment {
-    variables = {
-      FLASK_ENV = "production"
-      # Add other environment variables as needed
-    }
-  }
-
-  timeout     = 30  # Adjust based on your needs
-  memory_size = 256  # Adjust based on your needs
-}
-
-# IAM role for the Lambda function
-resource "aws_iam_role" "lambda_role" {
-  name = "flask-lambda-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-# Basic execution policy for Lambda
-resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
-  role       = aws_iam_role.lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
 # API Gateway REST API
 resource "aws_api_gateway_rest_api" "api" {
   name        = "flask-api"
@@ -57,6 +7,15 @@ resource "aws_api_gateway_rest_api" "api" {
     types = ["REGIONAL"]
   }
 }
+
+# API Gateway authorizer
+resource "aws_api_gateway_authorizer" "cognito" {
+  name          = "CognitoAuthorizer"
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  type          = "COGNITO_USER_POOLS"
+  provider_arns = [aws_cognito_user_pool.user_pool.arn]
+}
+
 
 # API Gateway resource (root path)
 resource "aws_api_gateway_resource" "proxy" {
@@ -112,7 +71,7 @@ resource "aws_api_gateway_deployment" "api_deployment" {
   ]
 
   rest_api_id = aws_api_gateway_rest_api.api.id
-  stage_name  = "prod"  # You can change this or use variables
+  stage_name  = var.stage_name  # You can change this or use variables
 }
 
 # Permission for API Gateway to invoke Lambda
@@ -122,8 +81,8 @@ resource "aws_lambda_permission" "api_gateway_permission" {
   function_name = aws_lambda_function.flask_lambda.function_name
   principal     = "apigateway.amazonaws.com"
 
-  # Allow invocation from any stage and path in the API Gateway
-  source_arn = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+  # Allow invocation from any path in the current stage API Gateway
+  source_arn = "${aws_api_gateway_rest_api.api.execution_arn}/${var.stage_name}/*"
 }
 
 # Enable CORS for the API (important for your SPA)
@@ -168,10 +127,6 @@ resource "aws_api_gateway_integration_response" "options_integration_response" {
   response_parameters = {
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
     "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,PUT,DELETE,OPTIONS'"
-    "method.response.header.Access-Control-Allow-Origin"  = "'*'"  # Be more restrictive in production
+    "method.response.header.Access-Control-Allow-Origin"  = "'https://${aws_cloudfront_distribution.website.domain_name}'"
   }
-}
-
-output "api_gateway_url" {
-  value = "${aws_api_gateway_deployment.api_deployment.invoke_url}"
 }

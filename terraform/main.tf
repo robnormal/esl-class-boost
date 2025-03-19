@@ -2,49 +2,58 @@ provider "aws" {
   region = "us-east-2"
 }
 
-resource "aws_s3_bucket" "uploads" {
-  bucket = "rr-history-learning-uploads"
+# Add a provider specifically for us-east-1 (CloudFront requires us-east-1)
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
 }
 
-resource "aws_s3_bucket" "summaries" {
-  bucket = "rr-history-learning-summaries"
+variable "stage_name" {
+  default = "prod"
 }
 
-# Cognito User Pool with admin-only account creation
-resource "aws_cognito_user_pool" "user_pool" {
-  name = "rr-history-learning-cognito-user-pool"
-  auto_verified_attributes = ["email"]
+###
+# Service IAM policies (access permissions)
+###
 
-  # Disable self-registration
-  admin_create_user_config {
-    allow_admin_create_user_only = true
-  }
+# IAM role for the Lambda functions
+resource "aws_iam_role" "lambda_role" {
+  name = "flask-lambda-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
-# Cognito User Pool Client
-resource "aws_cognito_user_pool_client" "user_pool_client" {
-  name         = "rr-history-learning-cognito-user-pool-client"
-  user_pool_id = aws_cognito_user_pool.user_pool.id
-  generate_secret = false
-
-  allowed_oauth_flows = ["implicit", "code"]
-  allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_scopes = ["email", "openid", "profile"]
-  callback_urls = ["http://localhost:3000", "http://12124-rhr-test-static-server-ie2n3.s3-website.us-east-2.amazonaws.com/"]
-  logout_urls = ["http://localhost:3000/logout", "http://12124-rhr-test-static-server-ie2n3.s3-website.us-east-2.amazonaws.com/logout"]
-
-  explicit_auth_flows = [
-    "ALLOW_ADMIN_USER_PASSWORD_AUTH",
-    "ALLOW_CUSTOM_AUTH",
-    "ALLOW_USER_SRP_AUTH",
-    "ALLOW_REFRESH_TOKEN_AUTH"
-  ]
+# Basic execution policy for Lambda
+resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-output "cognito_user_pool_id" {
-  value = aws_cognito_user_pool.user_pool.id
+resource "aws_iam_policy_attachment" "lambda_basic_execution" {
+  name       = "lambda_basic_execution"
+  roles      = [aws_iam_role.lambda_role.name]
+  policy_arn = "arn:aws:iam::aws:policy/AWSLambdaBasicExecutionRole"
 }
 
-output "cognito_user_pool_client_id" {
-  value = aws_cognito_user_pool_client.user_pool_client.id
+resource "aws_iam_policy_attachment" "lambda_s3_access" {
+  name       = "lambda_s3_access_attachment"
+  roles      = [aws_iam_role.lambda_role.name]
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+}
+
+resource "aws_iam_policy_attachment" "lambda_sqs_access" {
+  name       = "lambda_sqs_access_attachment"
+  roles      = [aws_iam_role.lambda_role.name]
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
 }
