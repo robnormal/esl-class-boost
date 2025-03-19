@@ -52,7 +52,8 @@ resource "aws_cloudfront_distribution" "website" {
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "S3-${aws_s3_bucket.website.bucket}"
 
-    cache_policy_id = aws_cloudfront_cache_policy.website_cache_policy.id
+    cache_policy_id            = aws_cloudfront_cache_policy.website_cache_policy.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security_headers.id
 
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
@@ -88,3 +89,33 @@ resource "aws_cloudfront_distribution" "website" {
 }
 
 # No Route 53 record needed when using the default CloudFront domain
+
+# Add security headers policy for CloudFront
+resource "aws_cloudfront_response_headers_policy" "security_headers" {
+  name = "history-learning-security-headers"
+
+  security_headers_config {
+    content_security_policy {
+      content_security_policy = "default-src 'self'; script-src 'self'; object-src 'none';"
+      override                = true
+    }
+
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+
+    strict_transport_security {
+      access_control_max_age_sec = 63072000
+      include_subdomains         = true
+      preload                    = true
+      override                   = true
+    }
+
+    xss_protection {
+      mode_block = true
+      protection = true
+      override   = true
+    }
+  }
+}

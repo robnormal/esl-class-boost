@@ -1,12 +1,12 @@
 # 1. Users Table
 resource "aws_dynamodb_table" "users_table" {
-  name         = "Users"
+  name         = "prod_history_learning_users"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "userId"
+  hash_key     = "user_id"
   range_key    = "email"
 
   attribute {
-    name = "userId"
+    name = "user_id"
     type = "S"
   }
 
@@ -17,92 +17,84 @@ resource "aws_dynamodb_table" "users_table" {
 
   # GSI for email lookups
   global_secondary_index {
-    name            = "email-index"
+    name            = "email_index"
     hash_key        = "email"
-    range_key       = "userId"
+    range_key       = "user_id"
     projection_type = "ALL"
   }
 
-  tags = merge(local.common_tags, {
-    Name = "Users-Table"
-  })
+  tags = local.common_tags
 }
 
 # 2. Submissions Table
 resource "aws_dynamodb_table" "submissions_table" {
-  name         = "Submissions"
+  name         = "prod_history_learning_submissions"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "submissionId"
-  range_key    = "userId"
+  hash_key     = "submission_id"
+  range_key    = "user_id"
 
   attribute {
-    name = "submissionId"
+    name = "submission_id"
     type = "S"
   }
 
   attribute {
-    name = "userId"
+    name = "user_id"
     type = "S"
   }
 
   attribute {
-    name = "createdAt"
+    name = "created_at"
     type = "N"
   }
 
   # GSI for getting all submissions for a user in descending order
   global_secondary_index {
-    name            = "user-submissions-index"
-    hash_key        = "userId"
-    range_key       = "createdAt"
+    name            = "user_submissions_index"
+    hash_key        = "user_id"
+    range_key       = "created_at"
     projection_type = "ALL"
   }
 
-  tags = merge(local.common_tags, {
-    Name = "Submissions-Table"
-  })
+  tags = local.common_tags
 }
 
 # 3. Summaries Table
 resource "aws_dynamodb_table" "summaries_table" {
-  name         = "Summaries"
+  name         = "prod_history_learning_summaries"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "submissionId"
-  range_key    = "SK"
+  hash_key     = "submission_id"
+  range_key    = "paragraph"
 
   attribute {
-    name = "submissionId"
+    name = "submission_id"
     type = "S"
   }
 
   attribute {
-    name = "SK"
+    name = "paragraph" # String like "#SUMMARY#<paragraph number>" - for query flexibility
     type = "S"
   }
 
-  tags = merge(local.common_tags, {
-    Name = "Summaries-Table"
-  })
+  tags = local.common_tags
 }
 
 # 4. Vocabulary Table
 resource "aws_dynamodb_table" "vocabulary_table" {
-  name         = "Vocabulary"
+  name         = "prod_history_learning_vocabulary"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "submissionId"
-  range_key    = "SK"
+  hash_key     = "submission_id"
+  range_key    = "paragraph_word"
 
   attribute {
-    name = "submissionId"
+    name = "submission_id"
     type = "S"
   }
 
   attribute {
-    name = "SK"
+    name = "paragraph_word" # String like "#VOCAB#<paragraph number>#word" - for query flexibility
     type = "S"
   }
 
-  tags = merge(local.common_tags, {
-    Name = "Vocabulary-Table"
-  })
+  tags = local.common_tags
 }

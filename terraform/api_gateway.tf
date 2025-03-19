@@ -72,7 +72,30 @@ resource "aws_api_gateway_deployment" "api_deployment" {
   ]
 
   rest_api_id = aws_api_gateway_rest_api.api.id
-  stage_name  = var.stage_name # You can change this or use variables
+  description = "Deployment for history learning API"
+
+  # Note: No stage_name attribute here
+  # This creates just the deployment without attaching it to a stage
+  # stage_name  = var.stage_name # You can change this or use variables
+}
+
+# Then, create a separate stage resource that references the deployment
+resource "aws_api_gateway_stage" "api_stage" {
+  deployment_id = aws_api_gateway_deployment.api_deployment.id
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  stage_name    = var.stage_name
+
+  # You can add stage-specific configurations here
+  cache_cluster_enabled = false
+  cache_cluster_size    = "0.5" # Only needed if cache_cluster_enabled is true
+
+  # Add any stage variables if needed
+  variables = {
+    "lambdaAlias" = var.stage_name
+  }
+
+  # Adding tags to the stage
+  tags = local.common_tags
 }
 
 # Permission for API Gateway to invoke Lambda
@@ -172,4 +195,54 @@ resource "aws_api_gateway_integration_response" "proxy_root_integration_response
   http_method         = aws_api_gateway_method.proxy_root.http_method
   status_code         = aws_api_gateway_method_response.proxy_root_response.status_code
   response_parameters = local.integration_response_parameters
+}
+
+##
+# Firewall
+##
+
+# WAF (web application firewall) WebACL for the API Gateway
+# We use the standard, default rules
+resource "aws_wafv2_web_acl" "api_waf" {
+  name  = "history-learning-api-waf"
+  scope = "REGIONAL"
+
+  default_action {
+    allow {}
+  }
+
+  # Add AWS managed rule sets
+  rule {
+    name     = "AWS-AWSManagedRulesCommonRuleSet"
+    priority = 1
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWS-AWSManagedRulesCommonRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "api-waf"
+    sampled_requests_enabled   = true
+  }
+}
+
+# Associate WAF with API Gateway
+resource "aws_wafv2_web_acl_association" "api_waf_association" {
+  resource_arn = aws_api_gateway_stage.api_stage.arn
+  web_acl_arn  = aws_wafv2_web_acl.api_waf.arn
 }

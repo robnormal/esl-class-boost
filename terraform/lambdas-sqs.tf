@@ -111,6 +111,12 @@ resource "aws_iam_role" "lambda_role" {
   })
 }
 
+# Basic execution policy for Lambda
+resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSLambdaBasicExecutionRole"
+}
+
 # Allow Lambdas to access any table in DynamoDB
 resource "aws_iam_policy" "lambda_dynamodb_policy" {
   name        = "lambda-dynamodb-access-policy"
@@ -140,23 +146,69 @@ resource "aws_iam_policy" "lambda_dynamodb_policy" {
   })
 }
 
-# Basic execution policy for Lambda
-resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
+resource "aws_iam_role_policy_attachment" "lambda_dynamodb_access" {
   role       = aws_iam_role.lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSLambdaBasicExecutionRole"
+  policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
+}
+
+# Replace broad policies with specific, scoped policies
+resource "aws_iam_policy" "lambda_s3_policy" {
+  name = "lambda-s3-specific-access"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket",
+        ],
+        Resource = [
+          aws_s3_bucket.submissions.arn,
+          "${aws_s3_bucket.submissions.arn}/*",
+          aws_s3_bucket.paragraphs.arn,
+          "${aws_s3_bucket.paragraphs.arn}/*",
+          aws_s3_bucket.summaries.arn,
+          "${aws_s3_bucket.summaries.arn}/*",
+        ]
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_s3_access" {
   role       = aws_iam_role.lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+  policy_arn = aws_iam_policy.lambda_s3_policy.arn
 }
 
+resource "aws_iam_policy" "lambda_sqs_policy" {
+  name        = "lambda-sqs-specific-access"
+  description = "Allows Lambda functions to access only specific SQS queues with minimum required permissions"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "sqs:SendMessage",
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:ChangeMessageVisibility",
+        ],
+        Resource = [
+          aws_sqs_queue.vocabulary_queue.arn,
+          aws_sqs_queue.summaries_queue.arn
+        ]
+      },
+    ]
+  })
+}
+
+# Then replace the policy attachment
 resource "aws_iam_role_policy_attachment" "lambda_sqs_access" {
   role       = aws_iam_role.lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_dynamodb_access" {
-  role       = aws_iam_role.lambda_role.name
-  policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
+  policy_arn = aws_iam_policy.lambda_sqs_policy.arn
 }
