@@ -33,51 +33,11 @@ terraform {
     }
   }
   backend "s3" {
-    bucket         = "rhr79-terraform-state"
-    key            = "history-learning/terraform.tfstate"
-    region         = "us-east-2"
-    use_lockfile   = true
+    # This bucket must already exist. It cannot be generated from this config
+    bucket       = "rhr79-terraform-state"
+    key          = "history-learning/terraform.tfstate"
+    region       = "us-east-2"
+    use_lockfile = true
   }
   required_version = "~> 1.10"
-}
-
-# Create the S3 bucket for state storage
-resource "aws_s3_bucket" "terraform_state" {
-  bucket = "rhr79-history-learning-terraform-state"
-  tags   = local.common_tags
-
-  # Prevent accidental deletion
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-# Enable versioning for state history
-resource "aws_s3_bucket_versioning" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
-
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-# Enable server-side encryption
-resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
-# Block public access
-resource "aws_s3_bucket_public_access_block" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
 }

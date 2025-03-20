@@ -36,6 +36,14 @@ resource "aws_lambda_function" "paragraphs_lambda" {
   tags          = local.common_tags
 }
 
+resource "aws_lambda_permission" "allow_s3" {
+  statement_id  = "AllowExecutionFromS3"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.paragraphs_lambda.function_name
+  principal     = "s3.amazonaws.com"
+  source_arn    = aws_s3_bucket.submissions.arn
+}
+
 resource "aws_lambda_function" "vocabulary_lambda" {
   function_name = "history-learning-vocabulary"
   role          = aws_iam_role.lambda_role.arn
@@ -114,7 +122,7 @@ resource "aws_iam_role" "lambda_role" {
 # Basic execution policy for Lambda
 resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
   role       = aws_iam_role.lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSLambdaBasicExecutionRole"
+  policy_arn = "arn:aws:iam::aws:policy/AWSLambdaExecute"
 }
 
 # Allow Lambdas to access any table in DynamoDB
@@ -212,3 +220,9 @@ resource "aws_iam_role_policy_attachment" "lambda_sqs_access" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.lambda_sqs_policy.arn
 }
+
+
+# filename      = "flask_lambda.zip"   # You'll need to create this deployment package
+# filename      = "paragraphs_lambda.zip" # Ensure this file is packaged correctly
+# filename      = "vocabulary_lambda.zip"
+# filename      = "summaries_lambda.zip"

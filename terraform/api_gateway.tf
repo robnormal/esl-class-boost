@@ -155,14 +155,6 @@ resource "aws_api_gateway_method_response" "options_response" {
   response_parameters = local.method_response_parameters
 }
 
-resource "aws_api_gateway_integration_response" "options_integration_response" {
-  rest_api_id         = aws_api_gateway_rest_api.api.id
-  resource_id         = aws_api_gateway_resource.proxy.id
-  http_method         = aws_api_gateway_method.options_method.http_method
-  status_code         = aws_api_gateway_method_response.options_response.status_code
-  response_parameters = local.integration_response_parameters
-}
-
 # For the proxy method
 resource "aws_api_gateway_method_response" "proxy_response" {
   rest_api_id         = aws_api_gateway_rest_api.api.id
@@ -170,14 +162,6 @@ resource "aws_api_gateway_method_response" "proxy_response" {
   http_method         = aws_api_gateway_method.proxy.http_method
   status_code         = "200"
   response_parameters = local.method_response_parameters
-}
-
-resource "aws_api_gateway_integration_response" "proxy_integration_response" {
-  rest_api_id         = aws_api_gateway_rest_api.api.id
-  resource_id         = aws_api_gateway_resource.proxy.id
-  http_method         = aws_api_gateway_method.proxy.http_method
-  status_code         = aws_api_gateway_method_response.proxy_response.status_code
-  response_parameters = local.integration_response_parameters
 }
 
 # For the root method
@@ -189,11 +173,11 @@ resource "aws_api_gateway_method_response" "proxy_root_response" {
   response_parameters = local.method_response_parameters
 }
 
-resource "aws_api_gateway_integration_response" "proxy_root_integration_response" {
+resource "aws_api_gateway_integration_response" "options_integration_response" {
   rest_api_id         = aws_api_gateway_rest_api.api.id
-  resource_id         = aws_api_gateway_rest_api.api.root_resource_id
-  http_method         = aws_api_gateway_method.proxy_root.http_method
-  status_code         = aws_api_gateway_method_response.proxy_root_response.status_code
+  resource_id         = aws_api_gateway_resource.proxy.id
+  http_method         = aws_api_gateway_method.options_method.http_method
+  status_code         = aws_api_gateway_method_response.options_response.status_code
   response_parameters = local.integration_response_parameters
 }
 
