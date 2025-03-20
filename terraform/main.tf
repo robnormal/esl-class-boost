@@ -26,22 +26,20 @@ locals {
 }
 
 terraform {
-  required_version = ">= 1.3.0"
-
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 5.0"
+      version = "5.82.2"
     }
   }
-
   backend "s3" {
     bucket         = "rhr79-history-learning-terraform-state"
     key            = "history-learning/terraform.tfstate"
     region         = "us-east-2"
-    encrypt        = true
-    dynamodb_table = "history-learning-terraform-lock"
+    key            = "history-learning-terraform.tfstate"
+    use_lockfile   = true
   }
+  required_version = "~> 1.10"
 }
 
 # Create the S3 bucket for state storage
