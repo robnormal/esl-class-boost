@@ -33,10 +33,9 @@ terraform {
     }
   }
   backend "s3" {
-    bucket         = "rhr79-history-learning-terraform-state"
+    bucket         = "rhr79-terraform-state"
     key            = "history-learning/terraform.tfstate"
     region         = "us-east-2"
-    key            = "history-learning-terraform.tfstate"
     use_lockfile   = true
   }
   required_version = "~> 1.10"
@@ -81,16 +80,4 @@ resource "aws_s3_bucket_public_access_block" "terraform_state" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
-}
-
-# Create DynamoDB table for state locking
-resource "aws_dynamodb_table" "terraform_lock" {
-  name         = "history-learning-terraform-lock"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
 }

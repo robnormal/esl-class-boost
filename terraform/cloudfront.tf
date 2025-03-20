@@ -30,6 +30,8 @@ resource "aws_cloudfront_cache_policy" "website_cache_policy" {
 
 # CloudFront distribution
 resource "aws_cloudfront_distribution" "website" {
+  provider = aws.us_east_1
+
   origin {
     domain_name = aws_s3_bucket.website.bucket_regional_domain_name
     origin_id   = "S3-${aws_s3_bucket.website.bucket}"
