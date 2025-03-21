@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
 import { Amplify } from 'aws-amplify';
-import Auth from 'aws-amplify/auth';
+import { getCurrentUser, signOut } from 'aws-amplify/auth';
 import '@aws-amplify/ui-react/styles.css';
 import './App.css';
 
@@ -53,7 +53,7 @@ function App() {
 
   async function checkAuthState() {
     try {
-      const userData = await Auth.getCurrentUser();
+      const userData = await getCurrentUser();
       setUser(userData);
     } catch (error) {
       console.log('Not authenticated');
@@ -64,7 +64,7 @@ function App() {
 
   async function handleSignOut() {
     try {
-      await Auth.signOut();
+      await signOut();
       setUser(null);
     } catch (error) {
       console.log('Error signing out: ', error);
