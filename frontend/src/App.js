@@ -6,12 +6,13 @@ import { getCurrentUser, signOut } from 'aws-amplify/auth';
 import '@aws-amplify/ui-react/styles.css';
 import './App.css';
 
-const COGNITO_DOMAIN = process.env.COGNITO_DOMAIN; // 'rhr79-history-learning-prod.auth.us-east-2.amazoncognito.com';
-const COGNITO_USER_POOL_ID = process.env.COGNITO_USER_POOL_ID;
-const COGNITO_USER_POOL_CLIENT_ID = process.env.COGNITO_USER_POOL_CLIENT_ID;
-const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN;
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
-const AWS_REGION = process.env.AWS_REGION;
+// TODO: figure out how not to hard-code these. Generate the file somehow. Import?
+const COGNITO_DOMAIN = process.env.REACT_APP_COGNITO_DOMAIN;
+const COGNITO_USER_POOL_ID = process.env.REACT_APP_COGNITO_USER_POOL_ID;
+const COGNITO_USER_POOL_CLIENT_ID = process.env.REACT_APP_COGNITO_USER_POOL_CLIENT_ID;
+const CLOUDFRONT_DOMAIN = process.env.REACT_APP_CLOUDFRONT_DOMAIN;
+const API_GATEWAY_URL = process.env.REACT_APP_API_GATEWAY_URL;
+const AWS_REGION = process.env.REACT_APP_AWS_REGION;
 
 // Initialize Amplify with Cognito configuration
 // These values would come from your CloudFront outputs
