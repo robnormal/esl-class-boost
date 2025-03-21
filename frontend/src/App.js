@@ -6,38 +6,27 @@ import { getCurrentUser, signOut } from 'aws-amplify/auth';
 import '@aws-amplify/ui-react/styles.css';
 import './App.css';
 
-// TODO: figure out how not to hard-code these. Generate the file somehow. Import?
-const COGNITO_DOMAIN = process.env.REACT_APP_COGNITO_DOMAIN;
+// These values come from terraform outputs
 const COGNITO_USER_POOL_ID = process.env.REACT_APP_COGNITO_USER_POOL_ID;
 const COGNITO_USER_POOL_CLIENT_ID = process.env.REACT_APP_COGNITO_USER_POOL_CLIENT_ID;
-const CLOUDFRONT_DOMAIN = process.env.REACT_APP_CLOUDFRONT_DOMAIN;
 const API_GATEWAY_URL = process.env.REACT_APP_API_GATEWAY_URL;
 const AWS_REGION = process.env.REACT_APP_AWS_REGION;
 
 // Initialize Amplify with Cognito configuration
-// These values would come from your CloudFront outputs
 Amplify.configure({
   // Auth configuration for Amplify v6+
   Auth: {
     Cognito: {
-      userPoolId: COGNITO_USER_POOL_ID, // Replace with aws_cognito_user_pool.user_pool.id from terraform output
-      userPoolClientId: COGNITO_USER_POOL_CLIENT_ID, // Replace with aws_cognito_user_pool_client.user_pool_client.id from terraform output
-      loginWith: {
-        oauth: {
-          domain: COGNITO_DOMAIN, // From terraform output: cognito_domain (without the https://)
-          scopes: ['email', 'openid', 'profile'],
-          responseType: 'code',
-          redirectSignIn: ['https://' + CLOUDFRONT_DOMAIN + '/auth/callback'], // Replace with aws_cloudfront_distribution.website.domain_name
-          redirectSignOut: ['https://' + CLOUDFRONT_DOMAIN + '/logout'], // Replace with aws_cloudfront_distribution.website.domain_name
-        }
-      }
+      userPoolId: COGNITO_USER_POOL_ID,
+      userPoolClientId: COGNITO_USER_POOL_CLIENT_ID,
+      region: AWS_REGION
     }
   },
   // API configuration
   API: {
     REST: {
       HistoryLearningAPI: {
-        endpoint: API_GATEWAY_URL, // Replace with aws_api_gateway_deployment.api_deployment.invoke_url
+        endpoint: API_GATEWAY_URL,
         region: AWS_REGION
       }
     }
@@ -58,6 +47,7 @@ function App() {
       setUser(userData);
     } catch (error) {
       console.log('Not authenticated');
+      console.log(error);
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +84,19 @@ function App() {
         <div className="login-container">
           <h1>History Learning Platform</h1>
           <p>Please sign in to access your learning materials</p>
-          <Authenticator loginMechanisms={['email']} socialProviders={[]}>
+          <Authenticator
+            initialState="signIn"
+            components={{
+              // Hide "Create Account" option since admin creates accounts
+              SignUp: () => null,
+            }}
+            services={{
+              accountRecovery: {
+                // Disable account recovery flow
+                enabled: false
+              }
+            }}
+          >
             {({ signOut }) => (
               <div>
                 <h2>Welcome back!</h2>

@@ -1,9 +1,7 @@
 # Cognito User Pool with admin-only account creation
 resource "aws_cognito_user_pool" "user_pool" {
-  name                     = "history-learning-cognito-user-pool"
-  auto_verified_attributes = ["email"]
+  name = "history-learning-cognito-user-pool"
 
-  # Disable self-registration
   admin_create_user_config {
     allow_admin_create_user_only = true
   }
@@ -34,9 +32,9 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
 
   explicit_auth_flows = [
     "ALLOW_ADMIN_USER_PASSWORD_AUTH",
-    "ALLOW_CUSTOM_AUTH",
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH",
     "ALLOW_USER_SRP_AUTH",
-    "ALLOW_REFRESH_TOKEN_AUTH"
   ]
 }
 
