@@ -39,3 +39,9 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
     "ALLOW_REFRESH_TOKEN_AUTH"
   ]
 }
+
+# Cognito User Pool Domain
+resource "aws_cognito_user_pool_domain" "main" {
+  domain       = "rhr79-history-learning-${var.stage_name}" # This will create a domain like history-learning-prod.auth.us-east-2.amazoncognito.com
+  user_pool_id = aws_cognito_user_pool.user_pool.id
+}

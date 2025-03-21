@@ -2,6 +2,16 @@ import uuid
 import boto3
 from flask import Flask, request, jsonify
 
+##
+# TODO: CORS headers
+#
+# The following headers need to be set to work with API Gateway:
+# Access-Control-Allow-Origin
+# Access-Control-Allow-Headers
+# Access-Control-Allow-Methods
+#
+##
+
 # Flask app setup
 app = Flask(__name__)
 
