@@ -8,3 +8,4 @@ openai
 flask
 boto3
 botocore
+chardet

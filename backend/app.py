@@ -1,6 +1,9 @@
 import uuid
 import boto3
+import requests
+import chardet
 from flask import Flask, request, jsonify
+from requests import Response
 
 ##
 # TODO: CORS headers
@@ -22,6 +25,9 @@ DYNAMODB_VOCAB_TABLE = "VocabularyTable"
 S3_BUCKET_NAME = "your-s3-bucket"
 S3_BASE_URL = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com"
 
+# Max file size
+MAX_BYTES = 100 * 1024 * 1024  # 100 MB
+
 # Initialize AWS Clients
 dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
 s3_client = boto3.client("s3", region_name=AWS_REGION)
@@ -30,27 +36,76 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 submissions_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
 vocab_table = dynamodb.Table(DYNAMODB_VOCAB_TABLE)
 
-@app.route("/submit-url", methods=["POST"])
-def submit_url():
-    """Stores the submitted file URL in DynamoDB."""
-    data = request.get_json()
-    if "file_url" not in data:
-        return jsonify({"error": "Missing 'file_url' in request body"}), 400
+def submitted_file_content(req) -> tuple[bytes, None]|tuple[None, tuple[Response, int]]:
+    """
+    Extracts file content (as bytes) from an uploaded file, URL, or raw text.
+    Enforces the 100MB max size limit.
+    Returns: (bytes) or (None, error_response)
+    """
+    uploaded_file = req.files.get("file")
+    input_url = req.form.get("url")
+    input_text = req.form.get("text")
 
-    file_id = str(uuid.uuid4())
-    file_url = data["file_url"]
+    if uploaded_file and uploaded_file.filename != "":
+        content_bytes = uploaded_file.read()
+    elif input_url:
+        try:
+            response = requests.get(input_url, timeout=10)
+            response.raise_for_status()
+            content_bytes = response.content
+        except Exception as e:
+            return None, (jsonify({"error": f"Failed to download URL: {str(e)}"}), 400)
+    elif input_text:
+        content_bytes = input_text.encode("utf-8")
+    else:
+        return None, (jsonify({"error": "No file uploaded"}), 400)
+
+    if len(content_bytes) > MAX_BYTES:
+        return None, (jsonify({"error": "File exceeds 100MB limit."}), 413)
+    else:
+        return content_bytes, None
+
+@app.route("/submit-text", methods=["POST"])
+def submit_text():
+    """
+    Accepts a file, URL, or raw text, saves it to S3, and records metadata in DynamoDB.
+    """
+    user_id = request.form.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Missing required field: 'user_id'"}), 400
+
+    file_bytes, error_response = submitted_file_content(request)
+    if error_response:
+        return error_response
 
     try:
-        submissions_table.put_item(
-            Item={
-                "file_id": file_id,
-                "file_url": file_url
-            }
-        )
+        detected_encoding = chardet.detect(file_bytes)["encoding"]
+        content_text = file_bytes.decode(detected_encoding or "utf-8")
     except Exception as e:
-        return jsonify({"error": f"DynamoDB error: {str(e)}"}), 500
+        return jsonify({"error": f"Failed to decode content: {str(e)}"}), 400
 
-    return jsonify({"file_id": file_id, "file_url": file_url, "message": "Submission successful."})
+    submission_id = str(uuid.uuid4())
+    s3_key = f"uploads/{submission_id}.txt"
+    s3_url = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
+
+    try:
+        s3_client.put_object(Bucket=S3_BUCKET_NAME, Key=s3_key, Body=content_text.encode("utf-8"))
+
+        submissions_table.put_item(Item={
+            "submission_id": submission_id,
+            "user_id": user_id,
+            "file_url": s3_url,
+            "created_at": int(uuid.uuid1().time),
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"AWS error: {str(e)}"}), 500
+
+    return jsonify({
+        "submission_id": submission_id,
+        "file_url": s3_url,
+        "message": "Text successfully submitted and saved."
+    })
 
 @app.route("/files", methods=["GET"])
 def list_files():
