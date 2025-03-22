@@ -87,7 +87,7 @@ function App(): JSX.Element {
 
             {/* ✅ Submission Form */}
             <div className="submission-form">
-              <SubmissionForm />
+              <SubmissionForm userId={user.username} />
             </div>
           </div>
           <button onClick={handleSignOut} className="sign-out-button">

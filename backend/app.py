@@ -1,6 +1,7 @@
 import uuid
 import boto3
 import requests
+import hashlib
 import chardet
 from flask import Flask, request, jsonify
 from requests import Response
@@ -36,6 +37,7 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 submissions_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
 vocab_table = dynamodb.Table(DYNAMODB_VOCAB_TABLE)
 
+
 def submitted_file_content(req) -> tuple[bytes, None]|tuple[None, tuple[Response, int]]:
     """
     Extracts file content (as bytes) from an uploaded file, URL, or raw text.
@@ -64,6 +66,40 @@ def submitted_file_content(req) -> tuple[bytes, None]|tuple[None, tuple[Response
         return None, (jsonify({"error": "File exceeds 100MB limit."}), 413)
     else:
         return content_bytes, None
+
+@app.route("/generate-upload-url", methods=["POST"])
+def generate_upload_url():
+    """
+    Generates a presigned S3 URL for uploading a file.
+    The submission_id is deterministically computed from the file content and user_id.
+    """
+    user_id = request.json.get("user_id")
+    file_name = request.json.get("file_name")
+    content_preview = request.json.get("content_preview")
+
+    if not user_id or not file_name or not content_preview:
+        return jsonify({"error": "Missing required fields: user_id, file_name, content_preview"}), 400
+
+    # Compute deterministic hash using user_id + content preview
+    hash_input = (user_id + content_preview).encode("utf-8")
+    submission_id = hashlib.sha256(hash_input).hexdigest()
+
+    s3_key = f"uploads/{user_id}/{submission_id}.txt"
+
+    try:
+        presigned_url = s3_client.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": S3_BUCKET_NAME, "Key": s3_key, "ContentType": "text/plain"},
+            ExpiresIn=300
+        )
+    except Exception as e:
+        return jsonify({"error": f"Failed to generate presigned URL: {str(e)}"}), 500
+
+    return jsonify({
+        "submission_id": submission_id,
+        "upload_url": presigned_url,
+        "s3_key": s3_key
+    })
 
 @app.route("/submit-text", methods=["POST"])
 def submit_text():
