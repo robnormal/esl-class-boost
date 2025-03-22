@@ -5,6 +5,8 @@ import { Amplify } from 'aws-amplify';
 import { getCurrentUser, signOut } from 'aws-amplify/auth';
 import '@aws-amplify/ui-react/styles.css';
 import './App.css';
+import SubmissionForm from './SubmissionForm';
+
 
 type CurrentUser = Awaited<ReturnType<typeof getCurrentUser>>;
 
@@ -85,19 +87,7 @@ function App(): JSX.Element {
 
             {/* ✅ Submission Form */}
             <div className="submission-form">
-              <h3>Submit a File</h3>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-                if (fileInput?.files?.[0]) {
-                  const file = fileInput.files[0];
-                  // TODO: Handle file upload logic
-                  console.log('Selected file:', file);
-                }
-              }}>
-                <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.html,.md,.png,.jpg" />
-                <button type="submit">Submit</button>
-              </form>
+              <SubmissionForm />
             </div>
           </div>
           <button onClick={handleSignOut} className="sign-out-button">
