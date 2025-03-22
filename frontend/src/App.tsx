@@ -79,11 +79,26 @@ function App(): JSX.Element {
         <div className="greeting-container">
           <h1>History Learning Platform</h1>
           <p>Welcome, {user.username}!</p>
-          <p>You are now logged in to the History Learning Platform.</p>
           <div className="dashboard-container">
             <h2>Your Dashboard</h2>
             <p>This is where you would see your learning progress and activities.</p>
-            {/* Add dashboard components here in the future */}
+
+            {/* ✅ Submission Form */}
+            <div className="submission-form">
+              <h3>Submit a File</h3>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+                if (fileInput?.files?.[0]) {
+                  const file = fileInput.files[0];
+                  // TODO: Handle file upload logic
+                  console.log('Selected file:', file);
+                }
+              }}>
+                <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.html,.md,.png,.jpg" />
+                <button type="submit">Submit</button>
+              </form>
+            </div>
           </div>
           <button onClick={handleSignOut} className="sign-out-button">
             Sign Out
