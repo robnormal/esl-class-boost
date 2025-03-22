@@ -18,7 +18,7 @@ from requests import Response
 # Flask app setup
 app = Flask(__name__)
 
-# AWS Configuration
+# TODO: read these from the environment
 AWS_REGION = "us-east-1"
 DYNAMODB_TABLE_NAME = "SubmissionsTable"
 DYNAMODB_VOCAB_TABLE = "VocabularyTable"
@@ -68,7 +68,7 @@ def submitted_file_content(req) -> tuple[bytes, None]|tuple[None, tuple[Response
 @app.route("/submit-text", methods=["POST"])
 def submit_text():
     """
-    Accepts a file, URL, or raw text, saves it to S3, and records metadata in DynamoDB.
+    Accepts a file, URL, or raw text, saves it to S3
     """
     user_id = request.form.get("user_id")
     if not user_id:
@@ -90,13 +90,6 @@ def submit_text():
 
     try:
         s3_client.put_object(Bucket=S3_BUCKET_NAME, Key=s3_key, Body=content_text.encode("utf-8"))
-
-        submissions_table.put_item(Item={
-            "submission_id": submission_id,
-            "user_id": user_id,
-            "file_url": s3_url,
-            "created_at": int(uuid.uuid1().time),
-        })
 
     except Exception as e:
         return jsonify({"error": f"AWS error: {str(e)}"}), 500
