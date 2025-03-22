@@ -19,7 +19,6 @@ Amplify.configure({
     Cognito: {
       userPoolId: COGNITO_USER_POOL_ID,
       userPoolClientId: COGNITO_USER_POOL_CLIENT_ID,
-      region: AWS_REGION
     }
   },
   // API configuration
@@ -66,6 +65,14 @@ function App() {
     return <div className="app-container">Loading...</div>;
   }
 
+  const components = {
+    SignIn: {
+      Footer() {
+        return null
+      }
+    }
+  };
+
   return (
     <div className="app-container">
       {user ? (
@@ -84,19 +91,7 @@ function App() {
         <div className="login-container">
           <h1>History Learning Platform</h1>
           <p>Please sign in to access your learning materials</p>
-          <Authenticator
-            initialState="signIn"
-            components={{
-              // Hide "Create Account" option since admin creates accounts
-              SignUp: () => null,
-            }}
-            services={{
-              accountRecovery: {
-                // Disable account recovery flow
-                enabled: false
-              }
-            }}
-          >
+          <Authenticator initialState="signIn" hideSignUp components={components}>
             {({ signOut }) => (
               <div>
                 <h2>Welcome back!</h2>

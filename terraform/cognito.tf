@@ -5,6 +5,14 @@ resource "aws_cognito_user_pool" "user_pool" {
   admin_create_user_config {
     allow_admin_create_user_only = true
   }
+
+  # Disable self-service account recovery
+  account_recovery_setting {
+    recovery_mechanism {
+      name     = "admin_only"
+      priority = 1
+    }
+  }
 }
 
 # Cognito User Pool Client
