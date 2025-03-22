@@ -19,10 +19,10 @@ from requests import Response
 app = Flask(__name__)
 
 # TODO: read these from the environment
-AWS_REGION = "us-east-1"
-DYNAMODB_TABLE_NAME = "SubmissionsTable"
-DYNAMODB_VOCAB_TABLE = "VocabularyTable"
-S3_BUCKET_NAME = "your-s3-bucket"
+AWS_REGION = "us-east-2"
+DYNAMODB_TABLE_NAME = "submissions"
+DYNAMODB_VOCAB_TABLE = "vocabulary_words"
+S3_BUCKET_NAME = "rhr79-history-learning-submissions"
 S3_BASE_URL = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com"
 
 # Max file size
