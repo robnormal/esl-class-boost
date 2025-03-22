@@ -11,6 +11,13 @@ function setErrorStatus(setStatus: SetStatus, exception: Error) {
   setStatus(`❌ Upload failed: ${exception.message}`);
 }
 
+async function hashFile(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 function SubmissionForm({ userId }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -24,15 +31,17 @@ function SubmissionForm({ userId }: Props) {
     }
 
     try {
-      setStatus('Requesting upload URL...');
+      setStatus('🔍 Hashing file...');
+      const fileHash = await hashFile(file);
 
+      setStatus('🔗 Requesting upload URL...');
       const response = await fetch('/generate-upload-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: userId,
           file_name: file.name,
-          content_preview: file.name,
+          file_hash: fileHash,
         }),
       });
 
@@ -40,15 +49,14 @@ function SubmissionForm({ userId }: Props) {
         return setErrorStatus(setStatus, new Error(`Failed to get upload URL: ${response.statusText}`))
       }
 
-      const data = await response.json();
-      const { upload_url, submission_id } = data;
+      const { upload_url, submission_id } = await response.json();
+      const contentType = file.type || 'application/octet-stream';
 
-      setStatus('Uploading to S3...');
-
+      setStatus('📤 Uploading to S3...');
       const uploadResult = await fetch(upload_url, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'text/plain',
+          'Content-Type': contentType,
         },
         body: file,
       });
@@ -57,7 +65,7 @@ function SubmissionForm({ userId }: Props) {
         return setErrorStatus(setStatus, new Error(`Upload to S3 failed: ${uploadResult.statusText}`));
       }
 
-      setStatus(`✅ File uploaded successfully! Submission ID: ${submission_id}`);
+      setStatus(`✅ Upload successful! Submission ID: ${submission_id}`);
     } catch (err: any) {
       setErrorStatus(setStatus, err);
     }
@@ -71,7 +79,7 @@ function SubmissionForm({ userId }: Props) {
         accept=".txt"
         onChange={(e) => setFile(e.target.files?.[0] || null)}
       />
-      <button type="submit">Submit</button>
+      <button type="submit" disabled={!file}>Submit</button>
       {status && <p>{status}</p>}
     </form>
   );
