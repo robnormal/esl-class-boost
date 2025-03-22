@@ -6,9 +6,9 @@
 resource "aws_lambda_function" "flask_lambda" {
   function_name    = "history-learning-api-lambda"
   runtime          = "python3.13"
-  handler          = "app.lambda_handler" # Update based on your Flask app structure
-  filename         = "flask_lambda.zip"   # You'll need to create this deployment package
-  source_code_hash = filebase64sha256("flask_lambda.zip")
+  handler          = "app.lambda_handler"    # Update based on your Flask app structure
+  filename         = "TEMP/flask_lambda.zip" # You'll need to create this deployment package
+  source_code_hash = filebase64sha256("TEMP/flask_lambda.zip")
   tags             = local.common_tags
 
   # You can also use S3 for larger deployment packages
@@ -33,8 +33,8 @@ resource "aws_lambda_function" "paragraphs_lambda" {
   role             = aws_iam_role.lambda_role.arn
   handler          = "lambda_function.handler"
   runtime          = "python3.13"
-  filename         = "paragraphs_lambda.zip" # Ensure this file is packaged correctly
-  source_code_hash = filebase64sha256("paragraphs_lambda.zip")
+  filename         = "TEMP/paragraphs_lambda.zip" # Ensure this file is packaged correctly
+  source_code_hash = filebase64sha256("TEMP/paragraphs_lambda.zip")
   tags             = local.common_tags
 }
 
@@ -51,8 +51,8 @@ resource "aws_lambda_function" "vocabulary_lambda" {
   role             = aws_iam_role.lambda_role.arn
   handler          = "lambda_function.handler"
   runtime          = "python3.13"
-  filename         = "vocabulary_lambda.zip"
-  source_code_hash = filebase64sha256("vocabulary_lambda.zip")
+  filename         = "TEMP/vocabulary_lambda.zip"
+  source_code_hash = filebase64sha256("TEMP/vocabulary_lambda.zip")
   tags             = local.common_tags
 }
 
@@ -61,8 +61,8 @@ resource "aws_lambda_function" "summaries_lambda" {
   role             = aws_iam_role.lambda_role.arn
   handler          = "lambda_function.handler"
   runtime          = "python3.13"
-  filename         = "summaries_lambda.zip"
-  source_code_hash = filebase64sha256("summaries_lambda.zip")
+  filename         = "TEMP/summaries_lambda.zip"
+  source_code_hash = filebase64sha256("TEMP/summaries_lambda.zip")
   tags             = local.common_tags
 }
 
@@ -224,9 +224,3 @@ resource "aws_iam_role_policy_attachment" "lambda_sqs_access" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.lambda_sqs_policy.arn
 }
-
-
-# filename      = "flask_lambda.zip"   # You'll need to create this deployment package
-# filename      = "paragraphs_lambda.zip" # Ensure this file is packaged correctly
-# filename      = "vocabulary_lambda.zip"
-# filename      = "summaries_lambda.zip"

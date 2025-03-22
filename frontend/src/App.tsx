@@ -1,46 +1,46 @@
-// src/App.js
-import React, { useState, useEffect } from 'react';
+// src/App.tsx
+import React, { useState, useEffect, JSX } from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
 import { Amplify } from 'aws-amplify';
 import { getCurrentUser, signOut } from 'aws-amplify/auth';
 import '@aws-amplify/ui-react/styles.css';
 import './App.css';
 
-// These values come from terraform outputs
-const COGNITO_USER_POOL_ID = process.env.REACT_APP_COGNITO_USER_POOL_ID;
-const COGNITO_USER_POOL_CLIENT_ID = process.env.REACT_APP_COGNITO_USER_POOL_CLIENT_ID;
-const API_GATEWAY_URL = process.env.REACT_APP_API_GATEWAY_URL;
-const AWS_REGION = process.env.REACT_APP_AWS_REGION;
+type CurrentUser = Awaited<ReturnType<typeof getCurrentUser>>;
 
-// Initialize Amplify with Cognito configuration
+// Environment variables
+const COGNITO_USER_POOL_ID = process.env.REACT_APP_COGNITO_USER_POOL_ID!;
+const COGNITO_USER_POOL_CLIENT_ID = process.env.REACT_APP_COGNITO_USER_POOL_CLIENT_ID!;
+const API_GATEWAY_URL = process.env.REACT_APP_API_GATEWAY_URL!;
+const AWS_REGION = process.env.REACT_APP_AWS_REGION!;
+
+// Configure Amplify
 Amplify.configure({
-  // Auth configuration for Amplify v6+
   Auth: {
     Cognito: {
       userPoolId: COGNITO_USER_POOL_ID,
       userPoolClientId: COGNITO_USER_POOL_CLIENT_ID,
-    }
+    },
   },
-  // API configuration
   API: {
     REST: {
       HistoryLearningAPI: {
         endpoint: API_GATEWAY_URL,
-        region: AWS_REGION
-      }
-    }
-  }
+        region: AWS_REGION,
+      },
+    },
+  },
 });
 
-function App() {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+function App(): JSX.Element {
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     checkAuthState();
   }, []);
 
-  async function checkAuthState() {
+  async function checkAuthState(): Promise<void> {
     try {
       const userData = await getCurrentUser();
       setUser(userData);
@@ -52,7 +52,7 @@ function App() {
     }
   }
 
-  async function handleSignOut() {
+  async function handleSignOut(): Promise<void> {
     try {
       await signOut();
       setUser(null);
@@ -68,9 +68,9 @@ function App() {
   const components = {
     SignIn: {
       Footer() {
-        return null
-      }
-    }
+        return null;
+      },
+    },
   };
 
   return (
@@ -85,14 +85,16 @@ function App() {
             <p>This is where you would see your learning progress and activities.</p>
             {/* Add dashboard components here in the future */}
           </div>
-          <button onClick={handleSignOut} className="sign-out-button">Sign Out</button>
+          <button onClick={handleSignOut} className="sign-out-button">
+            Sign Out
+          </button>
         </div>
       ) : (
         <div className="login-container">
           <h1>History Learning Platform</h1>
           <p>Please sign in to access your learning materials</p>
           <Authenticator initialState="signIn" hideSignUp components={components}>
-            {({ signOut }) => (
+            {({ signOut }: { signOut?: () => void }) => (
               <div>
                 <h2>Welcome back!</h2>
                 <p>You've successfully signed in.</p>
