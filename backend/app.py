@@ -4,26 +4,20 @@ import requests
 import chardet
 from flask import Flask, request, jsonify
 from requests import Response
-
-##
-# TODO: CORS headers
-#
-# The following headers need to be set to work with API Gateway:
-# Access-Control-Allow-Origin
-# Access-Control-Allow-Headers
-# Access-Control-Allow-Methods
-#
-##
+from flask_cors import CORS
 
 # Flask app setup
 app = Flask(__name__)
 
 # TODO: read these from the environment
-AWS_REGION = "us-east-2"
-DYNAMODB_TABLE_NAME = "submissions"
-DYNAMODB_VOCAB_TABLE = "vocabulary_words"
-S3_BUCKET_NAME = "rhr79-history-learning-submissions"
+AWS_REGION = 'us-east-2'
+S3_BUCKET_NAME = 'rhr79-history-learning-submissions'
 S3_BASE_URL = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com"
+CLOUDFRONT_DOMAIN = 'https://cxlkv80qo6.execute-api.us-east-2.amazonaws.com/'
+DYNAMODB_TABLE_NAME = 'submissions'
+DYNAMODB_VOCAB_TABLE = 'vocabulary_words'
+
+CORS(app, origins=[CLOUDFRONT_DOMAIN])
 
 # Max file size
 MAX_BYTES = 100 * 1024 * 1024  # 100 MB

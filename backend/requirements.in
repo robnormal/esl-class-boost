@@ -6,6 +6,7 @@ wordfreq
 beautifulsoup4
 openai
 flask
+flask_cors
 boto3
 botocore
 chardet
