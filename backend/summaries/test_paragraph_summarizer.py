@@ -1,7 +1,7 @@
 import pytest
 import openai
 from unittest.mock import patch, MagicMock
-from paragraph_summarizer import summarize_paragraph
+from summaries.paragraph_summarizer import summarize_paragraph
 
 @pytest.fixture
 def mock_openai_client():

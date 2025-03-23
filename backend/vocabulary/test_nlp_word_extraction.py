@@ -1,6 +1,6 @@
 import pytest
 import nltk
-from nlp_word_extraction import (
+from vocabulary.nlp_word_extraction import (
     expand_tokens, get_wordnet_pos, WordProcessor, Language, parse_paragraphs
 )
 from unittest.mock import patch, MagicMock

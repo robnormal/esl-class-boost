@@ -1,6 +1,6 @@
-from nlp_word_extraction import parse_text
-from paragraph_extractor import fetch_paragraphs_from_url
-from paragraph_summarizer import summarize_paragraph
+from vocabulary.nlp_word_extraction import parse_text
+from paragraphs.paragraph_extractor import fetch_paragraphs_from_url
+from summaries.paragraph_summarizer import summarize_paragraph
 
 def main() -> None:
     url = "http://www.americanyawp.com/text/18-industrial-america/"
