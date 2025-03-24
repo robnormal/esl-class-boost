@@ -31,18 +31,6 @@ submissions_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
 vocab_table = dynamodb.Table(DYNAMODB_VOCAB_TABLE)
 
 
-@app.after_request
-def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
-    response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
-    return response
-
-@app.route("/generate-upload-url", methods=["OPTIONS"])
-def options_generate_upload_url():
-    return "", 200
-
-
 def submitted_file_content(req) -> tuple[bytes, None]|tuple[None, tuple[Response, int]]:
     """
     Extracts file content (as bytes) from an uploaded file, URL, or raw text.

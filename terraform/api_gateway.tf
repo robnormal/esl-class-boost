@@ -99,6 +99,25 @@ resource "aws_api_gateway_integration_response" "options_root_integration_respon
   response_parameters = local.integration_response_parameters
 }
 
+# Enable CORS for the API (important for your SPA)
+resource "aws_api_gateway_method" "options_method" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.proxy.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "options_integration" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.proxy.id
+  http_method = aws_api_gateway_method.options_method.http_method
+  type        = "MOCK"
+  request_templates = {
+    "application/json" = jsonencode({
+      statusCode = 200
+    })
+  }
+}
 
 # Deploy the API Gateway
 resource "aws_api_gateway_deployment" "api_deployment" {
@@ -143,26 +162,6 @@ resource "aws_lambda_permission" "api_gateway_permission" {
 
   # Allow invocation from any path in the current stage API Gateway
   source_arn = "${aws_api_gateway_rest_api.api.execution_arn}/${var.stage_name}/*"
-}
-
-# Enable CORS for the API (important for your SPA)
-resource "aws_api_gateway_method" "options_method" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.proxy.id
-  http_method   = "OPTIONS"
-  authorization = "NONE"
-}
-
-resource "aws_api_gateway_integration" "options_integration" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.proxy.id
-  http_method = aws_api_gateway_method.options_method.http_method
-  type        = "MOCK"
-  request_templates = {
-    "application/json" = jsonencode({
-      statusCode = 200
-    })
-  }
 }
 
 # Define locals for reusable values

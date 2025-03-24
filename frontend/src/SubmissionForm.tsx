@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { fetchAuthSession } from '@aws-amplify/auth';
 
 interface Props {
   userId: string;
@@ -7,7 +8,11 @@ interface Props {
 type SetStatus = React.Dispatch<React.SetStateAction<string | null>>;
 
 const API_GATEWAY_URL = process.env.REACT_APP_API_GATEWAY_URL!;
-console.log(API_GATEWAY_URL)
+
+async function getSessionToken(): Promise<string|undefined> {
+  const session = await fetchAuthSession(); // From Amplify Auth
+  return session.tokens?.idToken?.toString();
+}
 
 function setErrorStatus(setStatus: SetStatus, exception: Error) {
   console.error(exception);
@@ -26,31 +31,35 @@ function SubmissionForm({ userId }: Props) {
   const [status, setStatus] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('a')
     e.preventDefault();
 
     if (!file) {
       alert('Please select a file to upload.');
       return;
     }
-    console.log('b')
 
     try {
       setStatus('🔍 Hashing file...');
       const fileHash = await hashFile(file);
-      console.log('c')
+
+      const auth_token = await getSessionToken();
+      if (!auth_token) {
+        return setErrorStatus(setStatus, new Error('Not logged in'))
+      }
 
       setStatus('🔗 Requesting upload URL...');
       const response = await fetch(API_GATEWAY_URL + '/generate-upload-url', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": auth_token,
+        },
         body: JSON.stringify({
           user_id: userId,
           file_name: file.name,
           file_hash: fileHash,
         }),
       });
-      console.log('d')
 
       if (!response.ok) {
         return setErrorStatus(setStatus, new Error(`Failed to get upload URL: ${response.statusText}`))
