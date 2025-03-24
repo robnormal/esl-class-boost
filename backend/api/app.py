@@ -5,6 +5,7 @@ import chardet
 from flask import Flask, request, jsonify
 from requests import Response
 from flask_cors import CORS
+import aws_lambda_wsgi
 
 # Flask app setup
 app = Flask(__name__)
@@ -163,10 +164,7 @@ def get_vocabulary(file_id):
 
 # Lambda Entry Point
 def lambda_handler(event, context):
-    from werkzeug.middleware.proxy_fix import ProxyFix
-    app.wsgi_app = ProxyFix(app.wsgi_app)
-
-    return app(event, context)
+    return aws_lambda_wsgi.response(app, event, context)
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -38,7 +38,7 @@ function SubmissionForm({ userId }: Props) {
       return;
     }
 
-    try {
+    // try {
       setStatus('🔍 Hashing file...');
       const fileHash = await hashFile(file);
 
@@ -84,9 +84,9 @@ function SubmissionForm({ userId }: Props) {
       }
 
       setStatus(`✅ Upload successful! Submission ID: ${submission_id}`);
-    } catch (err: any) {
-      setErrorStatus(setStatus, err);
-    }
+    // } catch (err: any) {
+    //   setErrorStatus(setStatus, err);
+    // }
   };
 
   return (

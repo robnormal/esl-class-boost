@@ -119,6 +119,26 @@ resource "aws_api_gateway_integration" "options_integration" {
   }
 }
 
+# Add CORS headers to 401 error pages (so we get the right error)
+resource "aws_api_gateway_gateway_response" "unauthorized" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  response_type = "UNAUTHORIZED"
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'https://${aws_cloudfront_distribution.website.domain_name}'"
+    "gatewayresponse.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,POST,PUT,DELETE,OPTIONS'"
+  }
+
+  status_code = "401"
+
+  response_templates = {
+    "application/json" = jsonencode({
+      message = "Unauthorized"
+    })
+  }
+}
+
 # Deploy the API Gateway
 resource "aws_api_gateway_deployment" "api_deployment" {
   depends_on = [

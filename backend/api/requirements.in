@@ -2,3 +2,4 @@ requests
 flask
 flask_cors
 chardet
+aws_lambda_wsgi
