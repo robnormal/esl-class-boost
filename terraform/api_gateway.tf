@@ -64,6 +64,42 @@ resource "aws_api_gateway_integration" "lambda_root" {
   uri                     = aws_lambda_function.flask_lambda.invoke_arn
 }
 
+# OPTIONS method
+resource "aws_api_gateway_method" "options_root_method" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_rest_api.api.root_resource_id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "options_root_integration" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_rest_api.api.root_resource_id
+  http_method = aws_api_gateway_method.options_root_method.http_method
+  type        = "MOCK"
+  request_templates = {
+    "application/json" = jsonencode({ statusCode = 200 })
+  }
+}
+
+resource "aws_api_gateway_method_response" "options_root_response" {
+  rest_api_id         = aws_api_gateway_rest_api.api.id
+  resource_id         = aws_api_gateway_rest_api.api.root_resource_id
+  http_method         = aws_api_gateway_method.options_root_method.http_method
+  status_code         = "200"
+  response_parameters = local.method_response_parameters
+}
+
+resource "aws_api_gateway_integration_response" "options_root_integration_response" {
+  depends_on          = [aws_api_gateway_integration.options_root_integration]
+  rest_api_id         = aws_api_gateway_rest_api.api.id
+  resource_id         = aws_api_gateway_rest_api.api.root_resource_id
+  http_method         = aws_api_gateway_method.options_root_method.http_method
+  status_code         = "200"
+  response_parameters = local.integration_response_parameters
+}
+
+
 # Deploy the API Gateway
 resource "aws_api_gateway_deployment" "api_deployment" {
   depends_on = [

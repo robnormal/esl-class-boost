@@ -6,6 +6,9 @@ interface Props {
 
 type SetStatus = React.Dispatch<React.SetStateAction<string | null>>;
 
+const API_GATEWAY_URL = process.env.REACT_APP_API_GATEWAY_URL!;
+console.log(API_GATEWAY_URL)
+
 function setErrorStatus(setStatus: SetStatus, exception: Error) {
   console.error(exception);
   setStatus(`❌ Upload failed: ${exception.message}`);
@@ -23,19 +26,22 @@ function SubmissionForm({ userId }: Props) {
   const [status, setStatus] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('a')
     e.preventDefault();
 
     if (!file) {
       alert('Please select a file to upload.');
       return;
     }
+    console.log('b')
 
     try {
       setStatus('🔍 Hashing file...');
       const fileHash = await hashFile(file);
+      console.log('c')
 
       setStatus('🔗 Requesting upload URL...');
-      const response = await fetch('/generate-upload-url', {
+      const response = await fetch(API_GATEWAY_URL + '/generate-upload-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -44,10 +50,13 @@ function SubmissionForm({ userId }: Props) {
           file_hash: fileHash,
         }),
       });
+      console.log('d')
 
       if (!response.ok) {
         return setErrorStatus(setStatus, new Error(`Failed to get upload URL: ${response.statusText}`))
       }
+
+      console.log(response);
 
       const { upload_url, submission_id } = await response.json();
       const contentType = file.type || 'application/octet-stream';
