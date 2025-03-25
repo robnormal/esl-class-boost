@@ -167,6 +167,18 @@ resource "aws_s3_bucket_public_access_block" "submissions" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_cors_configuration" "submissions_cors" {
+  bucket = aws_s3_bucket.submissions.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["PUT", "POST", "GET"]
+    allowed_origins = ["https://${aws_cloudfront_distribution.website.domain_name}"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
+
 # No explicit bucket policy needed for submissions bucket
 # Using IAM roles for Lambda access and presigned URLs for uploads
 # The permissions to generate presigned URLs are granted at the IAM level
