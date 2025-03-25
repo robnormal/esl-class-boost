@@ -10,11 +10,8 @@ import SubmissionForm from './SubmissionForm';
 
 type CurrentUser = Awaited<ReturnType<typeof getCurrentUser>>;
 
-// Environment variables
-const COGNITO_USER_POOL_ID = process.env.REACT_APP_COGNITO_USER_POOL_ID!;
-const COGNITO_USER_POOL_CLIENT_ID = process.env.REACT_APP_COGNITO_USER_POOL_CLIENT_ID!;
-const API_GATEWAY_URL = process.env.REACT_APP_API_GATEWAY_URL!;
-const AWS_REGION = process.env.REACT_APP_AWS_REGION!;
+const COGNITO_USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID;
+const COGNITO_USER_POOL_CLIENT_ID = import.meta.env.VITE_COGNITO_USER_POOL_CLIENT_ID;
 
 // Configure Amplify
 Amplify.configure({
@@ -22,16 +19,17 @@ Amplify.configure({
     Cognito: {
       userPoolId: COGNITO_USER_POOL_ID,
       userPoolClientId: COGNITO_USER_POOL_CLIENT_ID,
-    },
-  },
-  API: {
-    REST: {
-      HistoryLearningAPI: {
-        endpoint: API_GATEWAY_URL,
-        region: AWS_REGION,
-      },
-    },
-  },
+      loginWith: {
+        oauth: {
+          domain: "rhr79-history-learning-prod.auth.us-east-2.amazoncognito.com",
+          scopes: ["openid", "email", "profile"],
+          redirectSignIn: ["https://d26r2z94nwes8m.cloudfront.net/auth/callback"],
+          redirectSignOut: ["https://d26r2z94nwes8m.cloudfront.net/logout"],
+          responseType: "token"
+        }
+      }
+    }
+  }
 });
 
 function App(): JSX.Element {

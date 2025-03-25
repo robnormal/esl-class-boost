@@ -7,11 +7,18 @@ interface Props {
 
 type SetStatus = React.Dispatch<React.SetStateAction<string | null>>;
 
-const API_GATEWAY_URL = process.env.REACT_APP_API_GATEWAY_URL!;
+// Use optional chaining instead of non-null assertion
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL;
 
 async function getSessionToken(): Promise<string|undefined> {
-  const session = await fetchAuthSession(); // From Amplify Auth
-  return session.tokens?.idToken?.toString();
+  try {
+    const session = await fetchAuthSession();
+    // Get the JWT token string - Amplify v6 format
+    return session.tokens?.idToken?.toString();
+  } catch (error) {
+    console.error("Error getting auth session:", error);
+    return undefined;
+  }
 }
 
 function setErrorStatus(setStatus: SetStatus, exception: Error) {
@@ -38,21 +45,27 @@ function SubmissionForm({ userId }: Props) {
       return;
     }
 
-    // try {
+    try {
       setStatus('🔍 Hashing file...');
       const fileHash = await hashFile(file);
 
       const auth_token = await getSessionToken();
       if (!auth_token) {
-        return setErrorStatus(setStatus, new Error('Not logged in'))
+        return setErrorStatus(setStatus, new Error('Not logged in or unable to retrieve authentication token'));
+      }
+
+      // Check if API Gateway URL is defined
+      if (!API_GATEWAY_URL) {
+        return setErrorStatus(setStatus, new Error('API Gateway URL is not defined'));
       }
 
       setStatus('🔗 Requesting upload URL...');
+      // Add 'Bearer ' prefix to the token
       const response = await fetch(API_GATEWAY_URL + '/generate-upload-url', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
-          "Authorization": auth_token,
+          "Authorization": `Bearer ${auth_token}`,
         },
         body: JSON.stringify({
           user_id: userId,
@@ -61,13 +74,23 @@ function SubmissionForm({ userId }: Props) {
         }),
       });
 
+      // Log the full response for debugging
+      console.log("API Response status:", response.status);
+      console.log("API Response headers:", response.headers);
+
       if (!response.ok) {
-        return setErrorStatus(setStatus, new Error(`Failed to get upload URL: ${response.statusText}`))
+        const errorText = await response.text();
+        console.error("API Error Response:", errorText);
+        return setErrorStatus(
+          setStatus,
+          new Error(`Failed to get upload URL: ${response.status} ${response.statusText}`)
+        );
       }
 
-      console.log(response);
+      const data = await response.json();
+      console.log("API Response data:", data);
 
-      const { upload_url, submission_id } = await response.json();
+      const { upload_url, submission_id } = data;
       const contentType = file.type || 'application/octet-stream';
 
       setStatus('📤 Uploading to S3...');
@@ -84,9 +107,9 @@ function SubmissionForm({ userId }: Props) {
       }
 
       setStatus(`✅ Upload successful! Submission ID: ${submission_id}`);
-    // } catch (err: any) {
-    //   setErrorStatus(setStatus, err);
-    // }
+    } catch (err: any) {
+      setErrorStatus(setStatus, err);
+    }
   };
 
   return (

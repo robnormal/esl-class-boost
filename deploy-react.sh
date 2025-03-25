@@ -13,7 +13,7 @@ cd ../frontend
 npm run build
 
 # Step 2: Upload to S3 (sync deletes files no longer in the build folder)
-aws s3 sync build/ s3://rhr79-history-learning-website --delete
+aws s3 sync dist/ s3://rhr79-history-learning-website --delete
 
 # Step 3: Invalidate CloudFront cache
 aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DIST_ID --paths "/*"
