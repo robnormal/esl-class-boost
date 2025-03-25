@@ -14,11 +14,15 @@ app = Flask(__name__)
 AWS_REGION = 'us-east-2'
 S3_BUCKET_NAME = 'rhr79-history-learning-submissions'
 S3_BASE_URL = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com"
-CLOUDFRONT_DOMAIN = 'd26r2z94nwes8m.cloudfront.net'
+CLOUDFRONT_URL = 'https://d26r2z94nwes8m.cloudfront.net'
 DYNAMODB_TABLE_NAME = 'submissions'
 DYNAMODB_VOCAB_TABLE = 'vocabulary_words'
 
-CORS(app, origins=[CLOUDFRONT_DOMAIN])
+CORS(app, origins=[CLOUDFRONT_URL],
+     supports_credentials=True,
+     expose_headers=["Content-Type", "Authorization"],
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 # Max file size
 MAX_BYTES = 100 * 1024 * 1024  # 100 MB

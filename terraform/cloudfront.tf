@@ -98,7 +98,7 @@ resource "aws_cloudfront_response_headers_policy" "security_headers" {
 
   security_headers_config {
     content_security_policy {
-      content_security_policy = "default-src 'self'; connect-src 'self' https://cognito-idp.us-east-2.amazonaws.com https://*.auth.us-east-2.amazoncognito.com https://cxlkv80qo6.execute-api.us-east-2.amazonaws.com; script-src 'self'; object-src 'none';"
+      content_security_policy = "default-src 'self'; connect-src 'self' https://cognito-idp.us-east-2.amazonaws.com https://*.auth.us-east-2.amazoncognito.com https://${aws_s3_bucket.submissions.bucket_domain_name} https://cxlkv80qo6.execute-api.us-east-2.amazonaws.com; script-src 'self'; object-src 'none';"
       override                = true
     }
 
