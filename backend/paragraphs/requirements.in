@@ -1,2 +1,7 @@
+git+https://github.com/khaledkarman/textract.git@patch-1#egg=textract
 requests
-beautifulsoup4
+PyPDF2
+python-docx
+openpyxl
+python-pptx
+mammoth
