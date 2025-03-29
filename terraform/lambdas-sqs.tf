@@ -4,16 +4,13 @@
 
 # Lambda function for the Flask application
 resource "aws_lambda_function" "flask_lambda" {
-  function_name    = "history-learning-api-lambda"
-  runtime          = "python3.13"
-  handler          = "app.lambda_handler"    # Update based on your Flask app structure
-  filename         = "TEMP/flask_lambda.zip" # You'll need to create this deployment package
-  source_code_hash = filebase64sha256("TEMP/flask_lambda.zip")
-  tags             = local.common_tags
-
-  # You can also use S3 for larger deployment packages
-  # s3_bucket     = "my-lambda-deployments"
-  # s3_key        = "lambda_function.zip"
+  depends_on    = [aws_s3_bucket.lambda_code]
+  function_name = "history-learning-api-lambda"
+  runtime       = "python3.13"
+  handler       = "app.lambda_handler" # Update based on your Flask app structure
+  s3_bucket     = aws_s3_bucket.lambda_code.id
+  s3_key        = "lambda-packages/api_lambda.zip"
+  tags          = local.common_tags
 
   role = aws_iam_role.lambda_role.arn
 
@@ -28,14 +25,25 @@ resource "aws_lambda_function" "flask_lambda" {
   memory_size = 256 # Adjust based on your needs
 }
 
+# Need this to use binary lxml library on Lambda
+resource "aws_lambda_layer_version" "lxml_layer" {
+  layer_name          = "lxml-layer"
+  description         = "Lambda Layer containing lxml library"
+  s3_bucket           = aws_s3_bucket.lambda_code.id
+  s3_key              = "lambda-layers/lxml_layer.zip"
+  compatible_runtimes = ["python3.9"]
+}
+
 resource "aws_lambda_function" "paragraphs_lambda" {
-  function_name    = "history-learning-paragraphs"
-  role             = aws_iam_role.lambda_role.arn
-  handler          = "lambda_function.handler"
-  runtime          = "python3.13"
-  filename         = "TEMP/paragraphs_lambda.zip" # Ensure this file is packaged correctly
-  source_code_hash = filebase64sha256("TEMP/paragraphs_lambda.zip")
-  tags             = local.common_tags
+  depends_on    = [aws_s3_bucket.lambda_code]
+  function_name = "history-learning-paragraphs"
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "lambda_function.handler"
+  runtime       = "python3.9"
+  s3_bucket     = aws_s3_bucket.lambda_code.id
+  s3_key        = "lambda-packages/paragraphs_lambda.zip"
+  layers        = [aws_lambda_layer_version.lxml_layer.arn]
+  tags          = local.common_tags
 }
 
 resource "aws_lambda_permission" "allow_s3" {
@@ -47,23 +55,25 @@ resource "aws_lambda_permission" "allow_s3" {
 }
 
 resource "aws_lambda_function" "vocabulary_lambda" {
-  function_name    = "history-learning-vocabulary"
-  role             = aws_iam_role.lambda_role.arn
-  handler          = "lambda_function.handler"
-  runtime          = "python3.13"
-  filename         = "TEMP/vocabulary_lambda.zip"
-  source_code_hash = filebase64sha256("TEMP/vocabulary_lambda.zip")
-  tags             = local.common_tags
+  depends_on    = [aws_s3_bucket.lambda_code]
+  function_name = "history-learning-vocabulary"
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "lambda_function.handler"
+  runtime       = "python3.13"
+  s3_bucket     = aws_s3_bucket.lambda_code.id
+  s3_key        = "lambda-packages/vocabulary_lambda.zip"
+  tags          = local.common_tags
 }
 
 resource "aws_lambda_function" "summaries_lambda" {
-  function_name    = "history-learning-summaries"
-  role             = aws_iam_role.lambda_role.arn
-  handler          = "lambda_function.handler"
-  runtime          = "python3.13"
-  filename         = "TEMP/summaries_lambda.zip"
-  source_code_hash = filebase64sha256("TEMP/summaries_lambda.zip")
-  tags             = local.common_tags
+  depends_on    = [aws_s3_bucket.lambda_code]
+  function_name = "history-learning-summaries"
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "lambda_function.handler"
+  runtime       = "python3.13"
+  s3_bucket     = aws_s3_bucket.lambda_code.id
+  s3_key        = "lambda-packages/summaries_lambda.zip"
+  tags          = local.common_tags
 }
 
 ##

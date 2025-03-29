@@ -1,7 +1,8 @@
-git+https://github.com/khaledkarman/textract.git@patch-1#egg=textract
 requests
 PyPDF2
 python-docx
 openpyxl
 python-pptx
 mammoth
+striprtf
+bs4

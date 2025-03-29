@@ -179,6 +179,25 @@ resource "aws_s3_bucket_cors_configuration" "submissions_cors" {
   }
 }
 
-# No explicit bucket policy needed for submissions bucket
-# Using IAM roles for Lambda access and presigned URLs for uploads
-# The permissions to generate presigned URLs are granted at the IAM level
+# We load the code for the Lambdas from here,
+# because the size limits are larger than from direct upload
+resource "aws_s3_bucket" "lambda_code" {
+  bucket = "rhr79-history-learning-lambda-code"
+  tags   = local.common_tags
+}
+
+resource "aws_s3_bucket_ownership_controls" "lambda_code" {
+  bucket = aws_s3_bucket.lambda_code.id
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "lambda_code" {
+  bucket = aws_s3_bucket.lambda_code.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}

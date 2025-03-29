@@ -25,40 +25,32 @@ def handler(event, context):
         dict: Response indicating success or failure
     """
     try:
-        # Log the event for debugging
         print(f"Received event: {json.dumps(event)}")
-
-        # Get the source bucket and key from the event
         source_bucket = event['Records'][0]['s3']['bucket']['name']
         # The key comes URL-encoded, so we need to decode it
         source_key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'])
-
         print(f"Processing file: {source_key} from bucket: {source_bucket}")
 
-        # Create file paths for local processing
-        local_filename = os.path.basename(source_key)
-        local_filepath = os.path.join(TMP_DIR, local_filename)
+        key_parts = source_key.split('/')
+        if len(key_parts) != 2:
+            raise ValueError(f"Invalid file path: {source_key}; expected username/filename")
 
-        # Check available space in /tmp
+        username, local_filename = key_parts[0], key_parts[1]
+
+        # Create file paths for local processing
+        local_filename = os.path.basename(local_filename)
+        local_filepath = os.path.join(TMP_DIR, local_filename)
         tmp_stats = os.statvfs(TMP_DIR)
         available_space = tmp_stats.f_frsize * tmp_stats.f_bavail
         print(f"Available space in /tmp: {available_space / (1024 * 1024):.2f} MB")
-
-        # Download the file from S3 to local filesystem
         print(f"Downloading file to: {local_filepath}")
         s3_client.download_file(source_bucket, source_key, local_filepath)
 
-        # Get file size for logging
         file_size = os.path.getsize(local_filepath)
         print(f"Downloaded file size: {file_size / 1024:.2f} KB")
-
-        # Base64 encode the file and save locally
         paragraphs = TextExtractor(local_filepath).extract()
+        target_key = source_key # Use same key in the new bucket
 
-        # Generate the target key - maintaining the same path structure
-        target_key = f"encoded/{source_key}.b64"
-
-        # Upload the encoded file to the target bucket
         s3_client.put_object(
             Bucket=TARGET_BUCKET,
             Key=target_key,
@@ -71,7 +63,6 @@ def handler(event, context):
             }
         )
 
-        # Clean up local files
         try:
             os.remove(local_filepath)
             print("Cleaned up local temporary files")
