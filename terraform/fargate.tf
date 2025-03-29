@@ -1,10 +1,6 @@
-# Terraform configuration for replacing Lambda with ECS Fargate + ALB
+## VPC ##
 
-provider "aws" {
-  region = "us-east-2"
-}
-
-# VPC, Subnets, Security Groups (use existing if defined elsewhere)
+# ECS needs a VPC, Subnets, Security Groups
 data "aws_vpc" "default" {
   default = true
 }
@@ -36,12 +32,11 @@ resource "aws_security_group" "fargate_sg" {
   }
 }
 
-# ECS Cluster
+## ECS Cluster
 resource "aws_ecs_cluster" "app" {
   name = "history-learning-cluster"
 }
 
-# Task Execution Role
 resource "aws_iam_role" "ecs_task_execution" {
   name = "ecsTaskExecutionRole"
 
