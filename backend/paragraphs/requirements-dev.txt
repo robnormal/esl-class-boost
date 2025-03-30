@@ -4,10 +4,8 @@
 #
 #    pip-compile --output-file=requirements-dev.txt ../../requirements-dev.in requirements.in
 #
-argcomplete==1.10.3
-    # via textract
 beautifulsoup4==4.8.2
-    # via textract
+    # via bs4
 boto3==1.37.20
     # via -r ../../requirements-dev.in
 botocore==1.37.20
@@ -15,32 +13,20 @@ botocore==1.37.20
     #   -r ../../requirements-dev.in
     #   boto3
     #   s3transfer
+bs4==0.0.2
+    # via -r requirements.in
 certifi==2025.1.31
     # via requests
-chardet==3.0.4
-    # via
-    #   pdfminer-six
-    #   textract
 charset-normalizer==3.4.1
     # via requests
 cobble==0.1.4
     # via mammoth
-compressed-rtf==1.0.7
-    # via extract-msg
 coverage[toml]==7.7.1
     # via pytest-cov
-docx2txt==0.9
-    # via textract
-ebcdic==1.1.1
-    # via extract-msg
 et-xmlfile==2.0.0
     # via openpyxl
-extract-msg==0.29.0
-    # via textract
 idna==3.10
     # via requests
-imapclient==2.1.0
-    # via extract-msg
 iniconfig==2.1.0
     # via pytest
 jmespath==1.0.1
@@ -53,20 +39,14 @@ lxml==5.3.1
     #   python-pptx
 mammoth==1.9.0
     # via -r requirements.in
-olefile==0.47
-    # via extract-msg
 openpyxl==3.1.5
     # via -r requirements.in
 packaging==24.2
     # via pytest
-pdfminer-six==20191110
-    # via textract
 pillow==11.1.0
     # via python-pptx
 pluggy==1.5.0
     # via pytest
-pycryptodome==3.22.0
-    # via pdfminer-six
 pypdf2==3.0.1
     # via -r requirements.in
 pytest==8.3.5
@@ -80,36 +60,22 @@ python-dateutil==2.9.0.post0
 python-docx==1.1.2
     # via -r requirements.in
 python-pptx==0.6.23
-    # via
-    #   -r requirements.in
-    #   textract
+    # via -r requirements.in
 requests==2.32.3
     # via -r requirements.in
 s3transfer==0.11.4
     # via boto3
 six==1.12.0
-    # via
-    #   imapclient
-    #   pdfminer-six
-    #   python-dateutil
-    #   textract
-sortedcontainers==2.4.0
-    # via pdfminer-six
+    # via python-dateutil
 soupsieve==2.6
     # via beautifulsoup4
-speechrecognition==3.8.1
-    # via textract
-textract @ git+https://github.com/khaledkarman/textract.git@patch-1
+striprtf==0.0.29
     # via -r requirements.in
 typing-extensions==4.12.2
     # via python-docx
-tzlocal==5.3.1
-    # via extract-msg
 urllib3==2.3.0
     # via
     #   botocore
     #   requests
-xlrd==1.2.0
-    # via textract
 xlsxwriter==3.2.2
     # via python-pptx

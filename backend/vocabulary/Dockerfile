@@ -3,10 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PARAGRAPHS_QUEUE_URL="https://sqs.us-east-2.amazonaws.com/${AWS_ACCOUNT_ID}/history-learning-paragraphs-queue" \
-    SUBMISSIONS_BUCKET="rhr79-history-learning-submissions" \
-    PARAGRAPHS_BUCKET="rhr79-history-learning-paragraphs"
+    PYTHONUNBUFFERED=1
 
 # Install system dependencies
 RUN apt-get update \
@@ -23,4 +20,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Run the service
-CMD ["python", "main.py"]
+CMD ["python", "nlp_word_extraction.py"] 

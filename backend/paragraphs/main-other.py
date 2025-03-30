@@ -2,13 +2,8 @@ import json
 import boto3
 import os
 import urllib.parse
-import logging
 
 from paragraph_extractor import TextExtractor
-
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 # Initialize AWS clients
 s3_client = boto3.client('s3')
@@ -18,22 +13,23 @@ TARGET_BUCKET = os.environ.get('TARGET_BUCKET', 'rhr79-history-learning-paragrap
 # Lambda's temp directory
 TMP_DIR = '/tmp'
 
-def process_s3_event(event):
+def handler(event, context):
     """
-    Process an S3 event notification.
-    
+    Lambda function that encodes files uploaded to S3 as base64 and uploads to another bucket.
+
     Args:
         event (dict): The S3 event notification
-        
+        context (LambdaContext): Lambda context object
+
     Returns:
         dict: Response indicating success or failure
     """
     try:
-        logger.info(f"Received event: {json.dumps(event)}")
+        print(f"Received event: {json.dumps(event)}")
         source_bucket = event['Records'][0]['s3']['bucket']['name']
         # The key comes URL-encoded, so we need to decode it
         source_key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'])
-        logger.info(f"Processing file: {source_key} from bucket: {source_bucket}")
+        print(f"Processing file: {source_key} from bucket: {source_bucket}")
 
         key_parts = source_key.split('/')
         if len(key_parts) != 2:
@@ -46,12 +42,12 @@ def process_s3_event(event):
         local_filepath = os.path.join(TMP_DIR, local_filename)
         tmp_stats = os.statvfs(TMP_DIR)
         available_space = tmp_stats.f_frsize * tmp_stats.f_bavail
-        logger.info(f"Available space in /tmp: {available_space / (1024 * 1024):.2f} MB")
-        logger.info(f"Downloading file to: {local_filepath}")
+        print(f"Available space in /tmp: {available_space / (1024 * 1024):.2f} MB")
+        print(f"Downloading file to: {local_filepath}")
         s3_client.download_file(source_bucket, source_key, local_filepath)
 
         file_size = os.path.getsize(local_filepath)
-        logger.info(f"Downloaded file size: {file_size / 1024:.2f} KB")
+        print(f"Downloaded file size: {file_size / 1024:.2f} KB")
         paragraphs = TextExtractor(local_filepath).extract()
         target_key = source_key # Use same key in the new bucket
 
@@ -69,11 +65,11 @@ def process_s3_event(event):
 
         try:
             os.remove(local_filepath)
-            logger.info("Cleaned up local temporary files")
+            print("Cleaned up local temporary files")
         except Exception as cleanup_error:
-            logger.warning(f"Could not clean up temporary files: {str(cleanup_error)}")
+            print(f"Warning: Could not clean up temporary files: {str(cleanup_error)}")
 
-        logger.info(f"Successfully encoded and uploaded to {TARGET_BUCKET}/{target_key}")
+        print(f"Successfully encoded and uploaded to {TARGET_BUCKET}/{target_key}")
 
         return {
             'statusCode': 200,
@@ -85,46 +81,10 @@ def process_s3_event(event):
         }
 
     except Exception as e:
-        logger.error(f"Error processing file: {str(e)}")
+        print(f"Error processing file: {str(e)}")
         return {
             'statusCode': 500,
             'body': json.dumps({
                 'message': f"Error processing file: {str(e)}"
             })
         }
-
-def handler(event, context):
-    """
-    Lambda function that processes files uploaded to S3, either directly or via SQS.
-    
-    Args:
-        event (dict): Either an S3 event notification or an SQS event
-        context (LambdaContext): Lambda context object
-        
-    Returns:
-        dict: Response indicating success or failure
-    """
-    try:
-        # Check if this is an SQS event
-        if 'Records' in event and event['Records'][0].get('eventSource') == 'aws:sqs':
-            # Process each SQS message
-            for record in event['Records']:
-                # Parse the S3 event from the SQS message
-                s3_event = json.loads(record['body'])
-                result = process_s3_event(s3_event)
-                if result['statusCode'] != 200:
-                    raise Exception(f"Failed to process SQS message: {result['body']}")
-        else:
-            # Process direct S3 event
-            result = process_s3_event(event)
-            
-        return result
-
-    except Exception as e:
-        logger.error(f"Error in handler: {str(e)}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps({
-                'message': f"Error in handler: {str(e)}"
-            })
-        } 
