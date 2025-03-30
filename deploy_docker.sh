@@ -6,7 +6,7 @@ IFS=$'\n\t'
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 # Configuration
-AWS_REGION="us-east-1"  # Change this to your region
+AWS_REGION="us-east-2"  # Change this to your region
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
 

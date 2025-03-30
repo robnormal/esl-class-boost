@@ -67,14 +67,37 @@ resource "aws_ecs_task_definition" "flask" {
   container_definitions = jsonencode([
     {
       name      = "flask-app",
-      image     = "your-docker-image-url", # Replace with ECR or public image
+      image     = "${aws_ecr_repository.flask_app.repository_url}:latest",
       portMappings = [{ containerPort = 80, hostPort = 80 }],
       environment = [
         { name = "FLASK_ENV", value = "production" },
-      ]
+      ],
+      logConfiguration = {
+        logDriver = "awslogs",
+        options = {
+          "awslogs-group"         = "/ecs/history-learning-flask",
+          "awslogs-region"        = "us-east-2",
+          "awslogs-stream-prefix" = "flask"
+        }
+      }
     }
   ])
 }
+# ECR Repository for Flask App
+resource "aws_ecr_repository" "flask_app" {
+  name                 = "history-learning-flask"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name = "history-learning-flask"
+  }
+}
+
 
 # Application Load Balancer
 resource "aws_lb" "app_alb" {
