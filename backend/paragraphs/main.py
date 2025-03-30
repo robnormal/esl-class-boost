@@ -33,44 +33,41 @@ def upload_paragraphs(bucket, key, paragraphs):
         ContentType='application/json'
     )
 
-def process_message(message):
-    """Process a single SQS message."""
+def process_record(record):
+    """Process a single S3 record."""
+    bucket = record['s3']['bucket']['name']
+    key = record['s3']['object']['key']
+
+    logger.info(f"Processing file: {key} from bucket: {bucket}")
+
+    # Download the file
+    temp_file = download_file(bucket, key)
+
     try:
-        # Parse the S3 event from the message
-        body = json.loads(message['Body'])
-        for record in body['Records']:
-            bucket = record['s3']['bucket']['name']
-            key = record['s3']['object']['key']
-            
-            logger.info(f"Processing file: {key} from bucket: {bucket}")
-            
-            # Download the file
-            temp_file = download_file(bucket, key)
-            
-            try:
-                # Extract paragraphs
-                extractor = TextExtractor(temp_file)
-                text = extractor.extract()
-                paragraphs = extractor.extract_paragraphs(text)
-                
-                # Upload paragraphs to paragraphs bucket
-                output_key = f"{os.path.splitext(key)[0]}_paragraphs.json"
-                upload_paragraphs(PARAGRAPHS_BUCKET, output_key, paragraphs)
-                
-                logger.info(f"Successfully processed {key} into {output_key}")
-                
-            finally:
-                # Clean up temporary file
-                os.unlink(temp_file)
-                
-    except Exception as e:
-        logger.error(f"Error processing message: {e}")
-        raise
+        # Extract paragraphs
+        extractor = TextExtractor(temp_file)
+        text = extractor.extract()
+        paragraphs = extractor.extract_paragraphs(text)
+
+        # Upload paragraphs to paragraphs bucket
+        output_key = f"{os.path.splitext(key)[0]}_paragraphs.json"
+        upload_paragraphs(PARAGRAPHS_BUCKET, output_key, paragraphs)
+
+        logger.info(f"Successfully processed {key} into {output_key}")
+
+    finally:
+        # Clean up temporary file
+        os.unlink(temp_file)
+
+def process_message(message):
+    body = json.loads(message['Body'])
+    for record in body['Records']:
+        process_record(record)
 
 def main():
     """Main function to poll SQS queue."""
     logger.info("Starting paragraphs service...")
-    
+
     while True:
         try:
             # Receive messages from SQS
@@ -79,23 +76,24 @@ def main():
                 MaxNumberOfMessages=1,
                 WaitTimeSeconds=20  # Long polling
             )
-            
+
             if 'Messages' in response:
                 for message in response['Messages']:
                     try:
                         process_message(message)
-                        
+
                         # Delete the message after successful processing
                         sqs.delete_message(
                             QueueUrl=QUEUE_URL,
                             ReceiptHandle=message['ReceiptHandle']
                         )
-                        
+
                     except Exception as e:
                         logger.error(f"Error processing message: {e}")
                         # Don't delete the message if processing failed
+                        # TODO: manage retries
                         continue
-                        
+
         except Exception as e:
             logger.error(f"Error polling queue: {e}")
             continue
