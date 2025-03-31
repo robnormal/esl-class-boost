@@ -3,6 +3,8 @@ import json
 import logging
 import boto3
 import tempfile
+import signal
+import sys
 from paragraph_extractor import TextExtractor
 
 # Set up logging
@@ -14,9 +16,15 @@ sqs = boto3.client('sqs')
 s3 = boto3.client('s3')
 
 # Configuration
-QUEUE_URL = os.environ['PARAGRAPHS_QUEUE_URL']
-SUBMISSIONS_BUCKET = os.environ['SUBMISSIONS_BUCKET']
-PARAGRAPHS_BUCKET = os.environ['PARAGRAPHS_BUCKET']
+QUEUE_URL = os.environ.get('PARAGRAPHS_QUEUE_URL')
+SUBMISSIONS_BUCKET = os.environ.get('SUBMISSIONS_BUCKET')
+PARAGRAPHS_BUCKET = os.environ.get('PARAGRAPHS_BUCKET')
+
+# Validate required environment variables
+required_env_vars = ['PARAGRAPHS_QUEUE_URL', 'SUBMISSIONS_BUCKET', 'PARAGRAPHS_BUCKET']
+missing_vars = [var for var in required_env_vars if not os.environ.get(var)]
+if missing_vars:
+    raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
 def download_file(bucket, key):
     """Download a file from S3 to a temporary location."""
@@ -64,9 +72,21 @@ def process_message(message):
     for record in body['Records']:
         process_record(record)
 
+def signal_handler(signum, frame):
+    """Handle shutdown signals gracefully."""
+    logger.info(f"Received signal {signum}. Shutting down gracefully...")
+    sys.exit(0)
+
 def main():
     """Main function to poll SQS queue."""
     logger.info("Starting paragraphs service...")
+
+    # Set up signal handlers
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
+    consecutive_errors = 0
+    max_consecutive_errors = 5
 
     while True:
         try:
@@ -87,15 +107,22 @@ def main():
                             QueueUrl=QUEUE_URL,
                             ReceiptHandle=message['ReceiptHandle']
                         )
+                        consecutive_errors = 0  # Reset error counter on success
 
                     except Exception as e:
                         logger.error(f"Error processing message: {e}")
-                        # Don't delete the message if processing failed
-                        # TODO: manage retries
+                        consecutive_errors += 1
+                        if consecutive_errors >= max_consecutive_errors:
+                            logger.error("Too many consecutive errors. Shutting down...")
+                            sys.exit(1)
                         continue
 
         except Exception as e:
             logger.error(f"Error polling queue: {e}")
+            consecutive_errors += 1
+            if consecutive_errors >= max_consecutive_errors:
+                logger.error("Too many consecutive errors. Shutting down...")
+                sys.exit(1)
             continue
 
 if __name__ == "__main__":
