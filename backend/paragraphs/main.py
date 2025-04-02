@@ -5,6 +5,7 @@ import boto3
 import tempfile
 import signal
 import sys
+import time
 from paragraph_extractor import TextExtractor
 
 # Set up logging
@@ -14,6 +15,8 @@ logger = logging.getLogger(__name__)
 # AWS clients
 sqs = boto3.client('sqs')
 s3 = boto3.client('s3')
+dynamodb = boto3.resource('dynamodb')
+submissions_table = dynamodb.Table(os.environ.get('SUBMISSIONS_TABLE'))
 
 # Configuration
 QUEUE_URL = os.environ.get('PARAGRAPHS_QUEUE_URL')
@@ -21,10 +24,29 @@ SUBMISSIONS_BUCKET = os.environ.get('SUBMISSIONS_BUCKET')
 PARAGRAPHS_BUCKET = os.environ.get('PARAGRAPHS_BUCKET')
 
 # Validate required environment variables
-required_env_vars = ['PARAGRAPHS_QUEUE_URL', 'SUBMISSIONS_BUCKET', 'PARAGRAPHS_BUCKET']
+required_env_vars = ['PARAGRAPHS_QUEUE_URL', 'SUBMISSIONS_BUCKET', 'PARAGRAPHS_BUCKET', 'SUBMISSIONS_TABLE']
 missing_vars = [var for var in required_env_vars if not os.environ.get(var)]
 if missing_vars:
     raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
+def extract_submission_data_from_key(key):
+    """Extract user ID from S3 key format: uploads/{user_id}/{file_hash}.txt"""
+    parts = key.split('/')
+    if len(parts) >= 3 and parts[0] == 'uploads':
+        return parts[1], parts[2]
+    else:
+        raise ValueError(f"Invalid S3 key format: {key}")
+
+def write_to_dynamodb(submission_id, user_id):
+    """Write submission record to DynamoDB."""
+    submissions_table.put_item(
+        Item={
+            'submission_id': submission_id,
+            'user_id': user_id,
+            'created_at': int(time.time())
+        }
+    )
+    logger.info(f"Successfully wrote submission {submission_id} to DynamoDB")
 
 def download_file(bucket, key):
     """Download a file from S3 to a temporary location."""
@@ -48,7 +70,8 @@ def process_record(record):
 
     logger.info(f"Processing file: {key} from bucket: {bucket}")
 
-    # Download the file
+    user_id, submission_id = extract_submission_data_from_key(key)
+    write_to_dynamodb(submission_id, user_id)
     temp_file = download_file(bucket, key)
 
     try:
