@@ -53,7 +53,6 @@ resource "aws_s3_bucket_website_configuration" "website" {
 }
 
 
-# 1. PARAGRAPHS BUCKET - Lambda access only
 resource "aws_s3_bucket" "paragraphs" {
   bucket = "rhr79-history-learning-paragraphs"
   tags   = local.common_tags
@@ -83,7 +82,7 @@ resource "aws_s3_bucket_policy" "paragraphs" {
       {
         Effect = "Allow"
         Principal = {
-          AWS = aws_iam_role.lambda_role.arn
+          AWS = aws_iam_role.ecs_task_execution.arn
         }
         Action = [
           "s3:GetObject",
@@ -129,7 +128,7 @@ resource "aws_s3_bucket_policy" "summaries" {
       {
         Effect = "Allow"
         Principal = {
-          AWS = aws_iam_role.lambda_role.arn
+          AWS = aws_iam_role.ecs_task_execution.arn
         }
         Action = [
           "s3:GetObject",

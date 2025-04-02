@@ -43,8 +43,8 @@ resource "aws_iam_role" "ecs_task_execution" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Action = "sts:AssumeRole",
-      Effect = "Allow",
+      Action    = "sts:AssumeRole",
+      Effect    = "Allow",
       Principal = { Service = "ecs-tasks.amazonaws.com" }
     }]
   })
@@ -66,8 +66,8 @@ resource "aws_ecs_task_definition" "flask" {
 
   container_definitions = jsonencode([
     {
-      name      = "flask-app",
-      image     = "${aws_ecr_repository.flask_app.repository_url}:latest",
+      name         = "flask-app",
+      image        = "${aws_ecr_repository.flask_app.repository_url}:latest",
       portMappings = [{ containerPort = 80, hostPort = 80 }],
       environment = [
         { name = "FLASK_ENV", value = "production" },
@@ -109,10 +109,10 @@ resource "aws_lb" "app_alb" {
 }
 
 resource "aws_lb_target_group" "flask_tg" {
-  name     = "flask-target-group"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = data.aws_vpc.default.id
+  name        = "flask-target-group"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = data.aws_vpc.default.id
   target_type = "ip"
   health_check {
     path                = "/health"
@@ -143,8 +143,8 @@ resource "aws_ecs_service" "flask_service" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = data.aws_subnets.default.ids
-    security_groups = [aws_security_group.fargate_sg.id]
+    subnets          = data.aws_subnets.default.ids
+    security_groups  = [aws_security_group.fargate_sg.id]
     assign_public_ip = true
   }
 
@@ -155,25 +155,6 @@ resource "aws_ecs_service" "flask_service" {
   }
 
   depends_on = [aws_lb_listener.http]
-}
-
-# API Gateway Integration with ALB
-resource "aws_api_gateway_integration" "alb_integration" {
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.proxy.id
-  http_method             = aws_api_gateway_method.proxy.http_method
-  integration_http_method = "ANY"
-  type                    = "HTTP_PROXY"
-  uri                     = "http://${aws_lb.app_alb.dns_name}"
-}
-
-resource "aws_api_gateway_integration" "alb_root_integration" {
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_rest_api.api.root_resource_id
-  http_method             = aws_api_gateway_method.proxy_root.http_method
-  integration_http_method = "ANY"
-  type                    = "HTTP_PROXY"
-  uri                     = "http://${aws_lb.app_alb.dns_name}"
 }
 
 output "alb_dns_name" {

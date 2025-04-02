@@ -25,11 +25,11 @@ resource "aws_sqs_queue_policy" "paragraphs_queue_policy" {
         Principal = {
           Service = "s3.amazonaws.com"
         }
-        Action = "sqs:SendMessage"
+        Action   = "sqs:SendMessage"
         Resource = aws_sqs_queue.paragraphs_queue.arn
         Condition = {
           ArnLike = {
-            "aws:SourceArn": aws_s3_bucket.submissions.arn
+            "aws:SourceArn" : aws_s3_bucket.submissions.arn
           }
         }
       }
