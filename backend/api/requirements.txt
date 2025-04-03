@@ -4,7 +4,7 @@
 #
 #    pip-compile
 #
-aws-lambda-wsgi==0.0.6
+-e file:///home/rob/Code/english-vocabulary-tool/backend/common
     # via -r requirements.in
 blinker==1.9.0
     # via flask
@@ -32,6 +32,8 @@ markupsafe==3.0.2
     # via
     #   jinja2
     #   werkzeug
+python-dotenv==1.1.0
+    # via -r requirements.in
 requests==2.32.3
     # via -r requirements.in
 urllib3==2.3.0

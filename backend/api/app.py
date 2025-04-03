@@ -2,23 +2,29 @@ import uuid
 import boto3
 import requests
 import chardet
-from flask import Flask, request, jsonify
 from requests import Response
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-import aws_lambda_wsgi
+
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
+from common.envvar import environment
 
 # Flask app setup
 app = Flask(__name__)
 
-# TODO: read these from the environment
-AWS_REGION = 'us-east-2'
-S3_BUCKET_NAME = 'rhr79-history-learning-submissions'
-S3_BASE_URL = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com"
-CLOUDFRONT_URL = 'https://d26r2z94nwes8m.cloudfront.net'
-DYNAMODB_TABLE_NAME = 'submissions'
-DYNAMODB_VOCAB_TABLE = 'vocabulary_words'
+AWS_REGION = environment.require('AWS_REGION')
+SUBMISSIONS_BUCKET = environment.require('SUBMISSIONS_BUCKET')
+CLOUDFRONT_URL = environment.require('CLOUDFRONT_URL')
 
-CORS(app, origins=[CLOUDFRONT_URL],
+SUBMISSIONS_TABLE = 'submissions'
+VOCABULARY_TABLE = 'vocabulary_words'
+QUEUE_NAME = 'history-learning-paragraphs'
+
+CORS_ORIGINS = environment.require('CORS_ORIGINS').split(',')
+CORS(app, origins=CORS_ORIGINS,
      supports_credentials=True,
      expose_headers=["Content-Type", "Authorization"],
      allow_headers=["Content-Type", "Authorization"],
@@ -32,9 +38,8 @@ dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
 s3_client = boto3.client("s3", region_name=AWS_REGION)
 
 # Reference DynamoDB tables
-submissions_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
-vocab_table = dynamodb.Table(DYNAMODB_VOCAB_TABLE)
-
+submissions_table = dynamodb.Table(SUBMISSIONS_TABLE)
+vocab_table = dynamodb.Table(VOCABULARY_TABLE)
 
 def submitted_file_content(req) -> tuple[bytes, None]|tuple[None, tuple[Response, int]]:
     """
@@ -84,7 +89,7 @@ def generate_upload_url():
     try:
         presigned_url = s3_client.generate_presigned_url(
             'put_object',
-            Params={'Bucket': S3_BUCKET_NAME, 'Key': s3_key, 'ContentType': 'text/plain'},
+            Params={'Bucket': SUBMISSIONS_BUCKET, 'Key': s3_key, 'ContentType': 'text/plain'},
             ExpiresIn=300
         )
     except Exception as e:
@@ -117,10 +122,10 @@ def submit_text():
 
     submission_id = str(uuid.uuid4())
     s3_key = f"uploads/{submission_id}.txt"
-    s3_url = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
+    s3_url = f"https://{SUBMISSIONS_BUCKET}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
 
     try:
-        s3_client.put_object(Bucket=S3_BUCKET_NAME, Key=s3_key, Body=content_text.encode("utf-8"))
+        s3_client.put_object(Bucket=SUBMISSIONS_BUCKET, Key=s3_key, Body=content_text.encode("utf-8"))
 
     except Exception as e:
         return jsonify({"error": f"AWS error: {str(e)}"}), 500
@@ -148,7 +153,7 @@ def get_summaries(file_id):
     s3_key = f"summaries/{file_id}.txt"
 
     try:
-        response = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=s3_key)
+        response = s3_client.get_object(Bucket=SUBMISSIONS_BUCKET, Key=s3_key)
         summaries = response["Body"].read().decode("utf-8").split("\n")
     except s3_client.exceptions.NoSuchKey:
         return jsonify({"file_id": file_id, "error": "Summaries not found"}), 404
@@ -166,9 +171,5 @@ def get_vocabulary(file_id):
 
     return jsonify({"file_id": file_id, "vocabulary": vocab_data})
 
-# Lambda Entry Point
-def lambda_handler(event, context):
-    return aws_lambda_wsgi.response(app, event, context)
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)

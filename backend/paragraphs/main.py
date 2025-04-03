@@ -6,7 +6,7 @@ import signal
 import sys
 import time
 
-from envvar import environment
+from common.envvar import environment
 from paragraph_extractor import TextExtractor
 from dotenv import load_dotenv
 

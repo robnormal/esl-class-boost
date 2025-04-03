@@ -4,6 +4,8 @@
 #
 #    pip-compile
 #
+-e file:///home/rob/Code/english-vocabulary-tool/backend/common
+    # via -r requirements.in
 beautifulsoup4==4.13.3
     # via bs4
 bs4==0.0.2
@@ -31,6 +33,8 @@ pillow==11.1.0
 pypdf2==3.0.1
     # via -r requirements.in
 python-docx==1.1.2
+    # via -r requirements.in
+python-dotenv==1.1.0
     # via -r requirements.in
 python-pptx==0.6.23
     # via -r requirements.in

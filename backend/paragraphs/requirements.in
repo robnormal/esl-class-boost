@@ -7,3 +7,4 @@ python-pptx
 mammoth
 striprtf
 bs4
+-e ../common
