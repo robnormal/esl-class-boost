@@ -2,11 +2,11 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Add build argument for requirements file
+ARG REQUIREMENTS_FILE=requirements.txt
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PARAGRAPHS_QUEUE_URL="https://sqs.us-east-2.amazonaws.com/${AWS_ACCOUNT_ID}/history-learning-paragraphs-queue" \
-    SUBMISSIONS_BUCKET="rhr79-history-learning-submissions" \
-    PARAGRAPHS_BUCKET="rhr79-history-learning-paragraphs"
+    PYTHONUNBUFFERED=1
 
 # Install system dependencies
 RUN apt-get update \
@@ -15,8 +15,8 @@ RUN apt-get update \
         python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY requirements.txt .
+# Install Python dependencies using the specified requirements file
+COPY ${REQUIREMENTS_FILE} requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the service code

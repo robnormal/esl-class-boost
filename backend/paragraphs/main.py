@@ -1,33 +1,38 @@
 import os
 import json
 import logging
-import boto3
 import tempfile
 import signal
 import sys
 import time
+
+from envvar import environment
 from paragraph_extractor import TextExtractor
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+import boto3
+from sqs_client import sqs_client
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Configuration
+SUBMISSIONS_TABLE = 'submissions'
+QUEUE_NAME = 'history-learning-paragraphs'
+SUBMISSIONS_BUCKET = environment.require('SUBMISSIONS_BUCKET')
+PARAGRAPHS_BUCKET = environment.require('PARAGRAPHS_BUCKET')
+
 # AWS clients
-sqs = boto3.client('sqs')
 s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
-submissions_table = dynamodb.Table(os.environ.get('SUBMISSIONS_TABLE'))
+submissions_table = dynamodb.Table(SUBMISSIONS_TABLE)
 
-# Configuration
-QUEUE_URL = os.environ.get('PARAGRAPHS_QUEUE_URL')
-SUBMISSIONS_BUCKET = os.environ.get('SUBMISSIONS_BUCKET')
-PARAGRAPHS_BUCKET = os.environ.get('PARAGRAPHS_BUCKET')
-
-# Validate required environment variables
-required_env_vars = ['PARAGRAPHS_QUEUE_URL', 'SUBMISSIONS_BUCKET', 'PARAGRAPHS_BUCKET', 'SUBMISSIONS_TABLE']
-missing_vars = [var for var in required_env_vars if not os.environ.get(var)]
-if missing_vars:
-    raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+# Initialize SQS client
+queue_client = sqs_client.for_queue(QUEUE_NAME)
 
 def extract_submission_data_from_key(key):
     """Extract user ID from S3 key format: uploads/{user_id}/{file_hash}.txt"""
@@ -39,14 +44,11 @@ def extract_submission_data_from_key(key):
 
 def write_to_dynamodb(submission_id, user_id):
     """Write submission record to DynamoDB."""
-    submissions_table.put_item(
-        Item={
-            'submission_id': submission_id,
-            'user_id': user_id,
-            'created_at': int(time.time())
-        }
-    )
-    logger.info(f"Successfully wrote submission {submission_id} to DynamoDB")
+    submissions_table.put_item(Item={
+        'submission_id': submission_id,
+        'user_id': user_id,
+        'created_at': int(time.time())
+    })
 
 def download_file(bucket, key):
     """Download a file from S3 to a temporary location."""
@@ -95,9 +97,9 @@ def process_message(message):
     for record in body['Records']:
         process_record(record)
 
-def signal_handler(signum, frame):
-    """Handle shutdown signals gracefully."""
-    logger.info(f"Received signal {signum}. Shutting down gracefully...")
+def signal_handler(_signum, _frame):
+    """Handle shutdown signals."""
+    logger.info("Received shutdown signal. Cleaning up...")
     sys.exit(0)
 
 def main():
@@ -113,35 +115,29 @@ def main():
 
     while True:
         try:
+            logger.info("Receiving messages from SQS...")
+
             # Receive messages from SQS
-            response = sqs.receive_message(
-                QueueUrl=QUEUE_URL,
-                MaxNumberOfMessages=1,
-                WaitTimeSeconds=20  # Long polling
-            )
+            messages = queue_client.receive_messages(max_messages=1, wait_time_seconds=20)
 
-            if 'Messages' in response:
-                for message in response['Messages']:
-                    try:
-                        process_message(message)
+            for message in messages:
+                try:
+                    process_message(message)
 
-                        # Delete the message after successful processing
-                        sqs.delete_message(
-                            QueueUrl=QUEUE_URL,
-                            ReceiptHandle=message['ReceiptHandle']
-                        )
-                        consecutive_errors = 0  # Reset error counter on success
+                    # Delete the message after successful processing
+                    queue_client.delete_message(message['ReceiptHandle'])
+                    consecutive_errors = 0  # Reset error counter on success
 
-                    except Exception as e:
-                        logger.error(f"Error processing message: {e}")
-                        consecutive_errors += 1
-                        if consecutive_errors >= max_consecutive_errors:
-                            logger.error("Too many consecutive errors. Shutting down...")
-                            sys.exit(1)
-                        continue
+                except Exception as e:
+                    logger.error(f"Error processing message: {e}")
+                    consecutive_errors += 1
+                    if consecutive_errors >= max_consecutive_errors:
+                        logger.error("Too many consecutive errors. Shutting down...")
+                        sys.exit(1)
+                    continue
 
         except Exception as e:
-            logger.error(f"Error polling queue: {e}")
+            logger.error(f"Error polling queue: {e}", exc_info=True)
             consecutive_errors += 1
             if consecutive_errors >= max_consecutive_errors:
                 logger.error("Too many consecutive errors. Shutting down...")

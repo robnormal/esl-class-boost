@@ -59,14 +59,18 @@ python-dateutil==2.9.0.post0
     # via botocore
 python-docx==1.1.2
     # via -r requirements.in
+python-dotenv==1.1.0
+    # via -r ../../requirements-dev.in
 python-pptx==0.6.23
     # via -r requirements.in
 requests==2.32.3
     # via -r requirements.in
 s3transfer==0.11.4
     # via boto3
-six==1.12.0
-    # via python-dateutil
+six==1.17.0
+    # via
+    #   -r ../../requirements-dev.in
+    #   python-dateutil
 soupsieve==2.6
     # via beautifulsoup4
 striprtf==0.0.29

@@ -1,4 +1,5 @@
 -r requirements.in
+six>=1.15  # necessary due to bug in dateutils, which is required by botocore
 boto3
 botocore
 pytest
