@@ -15,18 +15,17 @@ RUN apt-get update \
         python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Must copy this first, as it's a dependency listed in requirements.txt
-COPY ./common /tmp/common
+# Copy the service code and common package
+COPY ./api ./api
+COPY ./common ./common
 
 # Install Python dependencies
-COPY ${REQUIREMENTS_FILE} requirements.txt
-RUN pip install -r requirements.txt
-
-# Copy the service code
-COPY ./api .
+COPY ${REQUIREMENTS_FILE} ./api/requirements.txt
+RUN cd api && pip install -r requirements.txt
 
 # Expose the port the app runs on
 EXPOSE 8000
 
 # Run the service
+WORKDIR /app/api
 CMD ["python", "app.py"]
