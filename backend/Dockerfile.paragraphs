@@ -15,12 +15,15 @@ RUN apt-get update \
         python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies using the specified requirements file
+# Must copy this first, as it's a dependency listed in requirements.txt
+COPY ./common /tmp/common
+
+# Install Python dependencies
 COPY ${REQUIREMENTS_FILE} requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Copy the service code
-COPY . .
+COPY ./paragraphs .
 
 # Create a non-root user
 RUN useradd -m appuser && chown -R appuser:appuser /app
