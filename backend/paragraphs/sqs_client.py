@@ -1,7 +1,7 @@
 import boto3
 import logging
 from typing import Optional, Dict, Any, List
-from envvar import environment
+from common.envvar import environment
 
 logger = logging.getLogger(__name__)
 
