@@ -19,12 +19,18 @@ bs4==0.0.2
     # via -r requirements.in
 certifi==2025.1.31
     # via requests
+cffi==1.17.1
+    # via cryptography
 charset-normalizer==3.4.1
-    # via requests
+    # via
+    #   pdfminer-six
+    #   requests
 cobble==0.1.4
     # via mammoth
 coverage[toml]==7.7.1
     # via pytest-cov
+cryptography==44.0.2
+    # via pdfminer-six
 et-xmlfile==2.0.0
     # via openpyxl
 idna==3.10
@@ -45,12 +51,20 @@ openpyxl==3.1.5
     # via -r requirements.in
 packaging==24.2
     # via pytest
+pdfminer-six==20250327
+    # via pdfplumber
+pdfplumber==0.11.6
+    # via -r requirements.in
 pillow==11.1.0
-    # via python-pptx
+    # via
+    #   pdfplumber
+    #   python-pptx
 pluggy==1.5.0
     # via pytest
-pypdf2==3.0.1
-    # via -r requirements.in
+pycparser==2.22
+    # via cffi
+pypdfium2==4.30.1
+    # via pdfplumber
 pytest==8.3.5
     # via
     #   -r ../../requirements-dev.in

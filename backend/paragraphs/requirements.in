@@ -1,6 +1,6 @@
 python-dotenv
 requests
-PyPDF2
+pdfplumber
 python-docx
 openpyxl
 python-pptx
