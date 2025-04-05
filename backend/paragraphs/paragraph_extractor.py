@@ -28,44 +28,39 @@ class TextExtractor:
         """Extract text from various file types."""
         file_extension = Path(self.file_path).suffix.lower()
 
-        try:
-            # PDF files
-            if file_extension == '.pdf':
-                paragraphs = extract_paragraphs_from_pdf(self.file_path)
+        # PDF files
+        if file_extension == '.pdf':
+            paragraphs = extract_paragraphs_from_pdf(self.file_path)
 
-            # Word documents
-            elif file_extension in ['.docx', '.doc']:
-                paragraphs = self._extract_from_word()
+        # Word documents
+        elif file_extension in ['.docx', '.doc']:
+            paragraphs = self._extract_from_word()
 
-            # HTML
-            elif file_extension in ['.html', '.htm']:
-                paragraphs = self._extract_from_html()
+        # HTML
+        elif file_extension in ['.html', '.htm']:
+            paragraphs = self._extract_from_html()
 
-            # Plain text files
-            elif file_extension in ['.txt', '.md', '.csv', '.json', '.xml']:
-                paragraphs = self._extract_from_text()
+        # Plain text files
+        elif file_extension in ['.txt', '.md', '.csv', '.json', '.xml']:
+            paragraphs = self._extract_from_text()
 
-            # Excel files
-            elif file_extension in ['.xlsx', '.xls']:
-                paragraphs = self._extract_from_excel()
+        # Excel files
+        elif file_extension in ['.xlsx', '.xls']:
+            paragraphs = self._extract_from_excel()
 
-            # PowerPoint files
-            elif file_extension in ['.pptx', '.ppt']:
-                paragraphs = self._extract_from_powerpoint()
+        # PowerPoint files
+        elif file_extension in ['.pptx', '.ppt']:
+            paragraphs = self._extract_from_powerpoint()
 
-            # RTF files
-            elif file_extension == '.rtf':
-                paragraphs = self._extract_from_rtf()
+        # RTF files
+        elif file_extension == '.rtf':
+            paragraphs = self._extract_from_rtf()
 
-            else:
-                raise ValueError('Unsupported file type')
+        else:
+            raise ValueError('Unsupported file type')
 
-            one_line_paragraphs = [re.sub(r'[\n\r]+', ' ', p) for p in paragraphs]
-            return one_line_paragraphs
-
-        except Exception as e:
-            logger.error(f"Error extracting text from {self.file_path}: {e}")
-            return f"Error extracting text: {str(e)}"
+        one_line_paragraphs = [re.sub(r'[\n\r]+', ' ', p) for p in paragraphs]
+        return one_line_paragraphs
 
     def _extract_from_word(self):
         """Extract text from Word documents."""
@@ -81,7 +76,8 @@ class TextExtractor:
     def _extract_from_text(self):
         """Extract text from plain text files."""
         with open(self.file_path, 'r', encoding='utf-8', errors='replace') as file:
-            return file.read()
+            # FIXME: naively dividing on empty lines
+            return file.read().split("\n\n")
 
     def _extract_from_html(self):
         """Extract text from HTML files. """
@@ -112,7 +108,7 @@ class TextExtractor:
                     if any(cells):
                         paragraphs.append(" | ".join(cells))
 
-            return "\n\n".join(paragraphs)
+            return paragraphs
 
     def _extract_from_excel(self):
         """Extract text from Excel files."""
