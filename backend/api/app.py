@@ -15,15 +15,14 @@ from common.envvar import environment
 # Flask app setup
 app = Flask(__name__)
 
-AWS_REGION = environment.require('AWS_REGION')
-SUBMISSIONS_BUCKET = environment.require('SUBMISSIONS_BUCKET')
-CLOUDFRONT_URL = environment.require('CLOUDFRONT_URL')
-
 SUBMISSIONS_TABLE = 'submissions'
 VOCABULARY_TABLE = 'vocabulary_words'
 QUEUE_NAME = 'history-learning-paragraphs'
 
+AWS_REGION = environment.require('AWS_REGION')
+SUBMISSIONS_BUCKET = environment.require('SUBMISSIONS_BUCKET')
 CORS_ORIGINS = environment.require('CORS_ORIGINS').split(',')
+
 CORS(app, origins=CORS_ORIGINS,
      supports_credentials=True,
      expose_headers=["Content-Type", "Authorization"],

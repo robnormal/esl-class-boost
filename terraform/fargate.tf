@@ -14,7 +14,7 @@ data "aws_subnets" "default" {
 
 resource "aws_security_group" "fargate_sg" {
   name        = "fargate-sg"
-  description = "Allow HTTP from API Gateway"
+  description = "Allow HTTP traffic"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -159,4 +159,54 @@ resource "aws_ecs_service" "flask_service" {
 
 output "alb_dns_name" {
   value = aws_lb.app_alb.dns_name
+}
+
+## Access
+
+resource "aws_s3_bucket_policy" "paragraphs" {
+  bucket = aws_s3_bucket.paragraphs.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.ecs_task_execution.arn
+        }
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "${aws_s3_bucket.paragraphs.arn}",
+          "${aws_s3_bucket.paragraphs.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_s3_bucket_policy" "summaries" {
+  bucket = aws_s3_bucket.summaries.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.ecs_task_execution.arn
+        }
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "${aws_s3_bucket.summaries.arn}",
+          "${aws_s3_bucket.summaries.arn}/*"
+        ]
+      }
+    ]
+  })
 }

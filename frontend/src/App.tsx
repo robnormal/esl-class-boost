@@ -7,30 +7,34 @@ import '@aws-amplify/ui-react/styles.css';
 import './App.css';
 import SubmissionForm from './SubmissionForm';
 
-
 type CurrentUser = Awaited<ReturnType<typeof getCurrentUser>>;
 
+const IS_DEV = import.meta.env.DEV;
 const COGNITO_USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID;
 const COGNITO_USER_POOL_CLIENT_ID = import.meta.env.VITE_COGNITO_USER_POOL_CLIENT_ID;
+const COGNITO_DOMAIN = import.meta.env.VITE_COGNITO_DOMAIN;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-// Configure Amplify
-Amplify.configure({
-  Auth: {
-    Cognito: {
-      userPoolId: COGNITO_USER_POOL_ID,
-      userPoolClientId: COGNITO_USER_POOL_CLIENT_ID,
-      loginWith: {
-        oauth: {
-          domain: "rhr79-history-learning-prod.auth.us-east-2.amazoncognito.com",
-          scopes: ["openid", "email", "profile"],
-          redirectSignIn: ["https://d26r2z94nwes8m.cloudfront.net/auth/callback"],
-          redirectSignOut: ["https://d26r2z94nwes8m.cloudfront.net/logout"],
-          responseType: "token"
+// Configure Amplify only in production
+if (!IS_DEV) {
+  Amplify.configure({
+    Auth: {
+      Cognito: {
+        userPoolId: COGNITO_USER_POOL_ID,
+        userPoolClientId: COGNITO_USER_POOL_CLIENT_ID,
+        loginWith: {
+          oauth: {
+            domain: COGNITO_DOMAIN,
+            scopes: ["openid", "email", "profile"],
+            redirectSignIn: [`${BACKEND_URL}/auth/callback`],
+            redirectSignOut: [`${BACKEND_URL}/logout`],
+            responseType: "token"
+          }
         }
       }
     }
-  }
-});
+  });
+}
 
 function App(): JSX.Element {
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -41,6 +45,13 @@ function App(): JSX.Element {
   }, []);
 
   async function checkAuthState(): Promise<void> {
+    if (IS_DEV) {
+      // Mock user for development
+      setUser({ username: 'dev-user', userId: 'dev-user-id' });
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const userData = await getCurrentUser();
       setUser(userData);

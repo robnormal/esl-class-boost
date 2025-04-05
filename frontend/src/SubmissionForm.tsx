@@ -8,9 +8,13 @@ interface Props {
 type SetStatus = React.Dispatch<React.SetStateAction<string | null>>;
 
 // Use optional chaining instead of non-null assertion
-const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const IS_DEV = import.meta.env.DEV;
 
 async function getSessionToken(): Promise<string|undefined> {
+  if (IS_DEV) {
+    return 'dev-token';
+  }
   try {
     const session = await fetchAuthSession();
     // Get the JWT token string - Amplify v6 format
@@ -55,13 +59,13 @@ function SubmissionForm({ userId }: Props) {
       }
 
       // Check if API Gateway URL is defined
-      if (!API_GATEWAY_URL) {
-        return setErrorStatus(setStatus, new Error('API Gateway URL is not defined'));
+      if (!BACKEND_URL) {
+        return setErrorStatus(setStatus, new Error('Backend URL is not defined'));
       }
 
       setStatus('🔗 Requesting upload URL...');
       // Add 'Bearer ' prefix to the token
-      const response = await fetch(API_GATEWAY_URL + '/generate-upload-url', {
+      const response = await fetch(BACKEND_URL + '/generate-upload-url', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",

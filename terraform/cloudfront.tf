@@ -1,3 +1,58 @@
+# S3 bucket for website hosting
+resource "aws_s3_bucket" "website" {
+  bucket = "rhr79-history-learning-website"
+  tags   = local.common_tags
+}
+
+# S3 bucket ACL (strictly speaking, we're disabling ACLs here)
+resource "aws_s3_bucket_ownership_controls" "website" {
+  bucket = aws_s3_bucket.website.id
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "website" {
+  bucket = aws_s3_bucket.website.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# S3 bucket policy allowing CloudFront access
+resource "aws_s3_bucket_policy" "website" {
+  bucket = aws_s3_bucket.website.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          AWS = "${aws_cloudfront_origin_access_identity.oai.iam_arn}"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.website.arn}/*"
+      }
+    ]
+  })
+}
+
+# S3 bucket website configuration
+resource "aws_s3_bucket_website_configuration" "website" {
+  bucket = aws_s3_bucket.website.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html" # For SPA routing, send all errors to index.html
+  }
+}
+
+
 # CloudFront Origin Access Identity (OAI)
 resource "aws_cloudfront_origin_access_identity" "oai" {
   comment = "OAI for history-learning website"
@@ -119,5 +174,18 @@ resource "aws_cloudfront_response_headers_policy" "security_headers" {
       protection = true
       override   = true
     }
+  }
+}
+
+# Permission to submit to S3 bucket
+resource "aws_s3_bucket_cors_configuration" "submissions_cors" {
+  bucket = aws_s3_bucket.submissions.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["PUT", "POST", "GET"]
+    allowed_origins = ["https://${aws_cloudfront_distribution.website.domain_name}"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
   }
 }
