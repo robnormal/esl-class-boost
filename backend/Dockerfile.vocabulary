@@ -1,0 +1,45 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Add build argument for requirements file
+ARG REQUIREMENTS_FILE=requirements.txt
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        gcc \
+        python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install nltk and dowload large resources
+# Do this before copying app code, so we don't have to re-download this whenever we rebuild
+RUN pip install nltk
+
+RUN python -c "import nltk; \
+    nltk.download('punkt'); \
+    nltk.download('punkt_tab'); \
+    nltk.download('averaged_perceptron_tagger'); \
+    nltk.download('averaged_perceptron_tagger_eng'); \
+    nltk.download('wordnet'); \
+    nltk.download('words'); \
+    nltk.download('omw-1.4')"
+
+# Copy the service code and common package
+COPY ./vocabulary ./vocabulary
+COPY ./common ./common
+
+# Install Python dependencies
+COPY ${REQUIREMENTS_FILE} ./vocabulary/requirements.txt
+RUN cd vocabulary && pip install -r requirements.txt
+
+# Create a non-root user
+RUN useradd -m appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Run the service
+WORKDIR /app/vocabulary
+CMD ["python", "main.py"]
