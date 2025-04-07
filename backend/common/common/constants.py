@@ -4,3 +4,5 @@ VOCABULARY_TABLE = "history_learning_vocabulary"
 SUMMARIES_TABLE = "history_learning_summaries"
 
 PARAGRAPHS_QUEUE = 'history-learning-paragraphs'
+VOCABULARY_QUEUE = 'history-learning-vocabulary'
+SUMMARIES_QUEUE = 'history-learning-summaries'

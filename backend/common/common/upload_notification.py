@@ -3,6 +3,8 @@ import sys
 import os
 import tempfile
 from contextlib import contextmanager
+from typing import Iterator
+
 import boto3
 
 from common.logger import logger
@@ -11,8 +13,34 @@ from sqs_client import QueueClient
 sqs = boto3.client('sqs')
 s3 = boto3.client('s3')
 
+
+def submission_id_from_s3_key(key):
+    """Extract user ID from S3 key format: uploads/{user_id}/{file_hash}.txt"""
+    parts = key.split('/')
+    if len(parts) >= 3 and parts[0] == 'uploads':
+        return parts[1], parts[2]
+    else:
+        raise ValueError(f"Invalid S3 key format: {key}")
+
+class S3Upload:
+    def __init__(self, sqs_record):
+        self.record = sqs_record
+        self.bucket = sqs_record['s3']['bucket']['name']
+        self.key = sqs_record['s3']['object']['key']
+        self.filename = self.key.split('/')[-1]
+        self.user_id, self.file_hash = submission_id_from_s3_key(self.key)
+
+        logger.info(f"S3 bucket {self.bucket} key {self.key}")
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{self.filename}") as tmp:
+            s3.download_file(self.bucket, self.key, tmp.name)
+            self.tmp_file_path = tmp.name
+            logger.info(f"Downloaded to {self.tmp_file_path}")
+
+    def __del__(self):
+        os.remove(self.tmp_file_path)
+
 @contextmanager
-def poll_sqs_for_s3_file(queue_client: QueueClient):
+def poll_sqs_for_s3_file(queue_client: QueueClient) -> Iterator[S3Upload]:
     while True:
         logger.info('Requesting now...')
         messages = queue_client.receive_messages(max_messages=1, wait_time_seconds=10)
@@ -31,21 +59,8 @@ def poll_sqs_for_s3_file(queue_client: QueueClient):
                 if record.get('eventName') != 'ObjectCreated:Put':
                     continue
 
-                bucket = record['s3']['bucket']['name']
-                key = record['s3']['object']['key']
-                filename = key.split('/')[-1]
-                logger.info(f"S3 bucket {bucket} key {key}")
-
-                with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{filename}") as tmp:
-                    logger.info('Downloading...')
-                    s3.download_file(bucket, key, tmp.name)
-                    tmp_path = tmp.name
-                    logger.info(f"Downloaded to {tmp_path}")
-
-                try:
-                    yield tmp_path, bucket, key, message
-                finally:
-                    os.remove(tmp_path)
+                upload = S3Upload(record)
+                yield upload
 
                 queue_client.delete_message(receipt_handle)
                 return  # Exit after processing one file
@@ -60,8 +75,8 @@ def poll_sqs_for_s3_file_forever(queue_client: QueueClient, max_consecutive_erro
     while True:
         try:
             logger.info("Receiving messages from SQS...")
-            with poll_sqs_for_s3_file(queue_client) as poll_result:
-                yield poll_result
+            with poll_sqs_for_s3_file(queue_client) as s3_upload:
+                yield s3_upload
             consecutive_errors = 0  # Reset error counter on success
 
         except Exception as e:
