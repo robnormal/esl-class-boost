@@ -71,16 +71,6 @@ resource "aws_sqs_queue_policy" "vocabulary_queue_policy" {
   })
 }
 
-# Update S3 bucket notification to use SQS
-resource "aws_s3_bucket_notification" "vocabulary_s3_upload_trigger" {
-  bucket = aws_s3_bucket.paragraphs.id
-
-  queue {
-    queue_arn = aws_sqs_queue.vocabulary_queue.arn
-    events    = ["s3:ObjectCreated:*"]
-  }
-}
-
 # Send notification to summaries_queue when file uploaded to paragraphs bucket
 resource "aws_sqs_queue_policy" "summaries_queue_policy" {
   queue_url = aws_sqs_queue.summaries_queue.id
@@ -106,8 +96,13 @@ resource "aws_sqs_queue_policy" "summaries_queue_policy" {
 }
 
 # Update S3 bucket notification to use SQS
-resource "aws_s3_bucket_notification" "summaries_s3_upload_trigger" {
+resource "aws_s3_bucket_notification" "paragraphs_s3_upload_trigger" {
   bucket = aws_s3_bucket.paragraphs.id
+
+  queue {
+    queue_arn = aws_sqs_queue.vocabulary_queue.arn
+    events    = ["s3:ObjectCreated:*"]
+  }
 
   queue {
     queue_arn = aws_sqs_queue.summaries_queue.arn
