@@ -20,7 +20,7 @@ from common.constants import PARAGRAPHS_QUEUE, SUBMISSIONS_TABLE
 from common.envvar import environment
 from common.logger import logger
 from common.s3_upload_from_sqs_notification import poll_sqs_for_s3_file_forever
-from paragraph_extractor import TextExtractor
+from paragraph_extractor import extract_paragraphs
 from sqs_client import sqs_client
 
 # Configuration
@@ -63,8 +63,7 @@ def process_record(temp_file, key):
     user_id, submission_id = extract_submission_data_from_key(key)
     save_submission_to_db(submission_id, user_id)
 
-    extractor = TextExtractor(temp_file)
-    paragraphs = extractor._to_plain_text()
+    paragraphs = extract_paragraphs(temp_file)
 
     # Upload paragraphs to paragraphs bucket
     output_key = f"{os.path.splitext(key)[0]}_paragraphs.json"
