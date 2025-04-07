@@ -1,6 +1,6 @@
 # 1. Users Table
 resource "aws_dynamodb_table" "users" {
-  name         = "prod_history_learning_users"
+  name         = "history_learning_users"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "user_id"
   range_key    = "email"
@@ -28,7 +28,7 @@ resource "aws_dynamodb_table" "users" {
 
 # 2. Submissions Table
 resource "aws_dynamodb_table" "submissions" {
-  name         = "prod_history_learning_submissions"
+  name         = "history_learning_submissions"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "submission_id"
   range_key    = "user_id"
@@ -61,7 +61,7 @@ resource "aws_dynamodb_table" "submissions" {
 
 # 3. Summaries Table
 resource "aws_dynamodb_table" "summaries" {
-  name         = "prod_history_learning_summaries"
+  name         = "history_learning_summaries"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "submission_id"
   range_key    = "paragraph"
@@ -81,7 +81,7 @@ resource "aws_dynamodb_table" "summaries" {
 
 # 4. Vocabulary Table
 resource "aws_dynamodb_table" "vocabulary_words" {
-  name         = "prod_history_learning_vocabulary"
+  name         = "history_learning_vocabulary"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "submission_id"
   range_key    = "paragraph_word"
