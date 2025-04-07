@@ -4,6 +4,8 @@
 #
 #    pip-compile
 #
+-e file:///home/rob/Code/english-vocabulary-tool/backend/common
+    # via -r requirements.in
 click==8.1.8
     # via nltk
 ftfy==6.3.1
@@ -21,6 +23,8 @@ marisa-trie==1.2.1
 msgpack==1.1.0
     # via wordfreq
 nltk==3.9.1
+    # via -r requirements.in
+python-dotenv==1.1.0
     # via -r requirements.in
 regex==2024.11.6
     # via
