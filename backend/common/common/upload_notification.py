@@ -8,7 +8,7 @@ from typing import Iterator
 import boto3
 
 from common.logger import logger
-from sqs_client import QueueClient
+from common.sqs_client import QueueClient
 
 sqs = boto3.client('sqs')
 s3 = boto3.client('s3')

@@ -22,7 +22,7 @@ from common.logger import logger
 from common.upload_notification import poll_sqs_for_s3_file_forever, S3Upload
 
 from paragraph_extractor import extract_paragraphs
-from sqs_client import sqs_client
+from common.sqs_client import sqs_client
 
 # Configuration
 SUBMISSIONS_BUCKET = environment.require('SUBMISSIONS_BUCKET')
