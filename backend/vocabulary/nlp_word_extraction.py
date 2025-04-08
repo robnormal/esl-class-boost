@@ -7,7 +7,7 @@ It uses NLTK for NLP tasks and wordfreq for language frequency analysis.
 import re
 import functools
 import logging
-from typing import Dict, List, Tuple, Any, Set
+from typing import Dict, List, Any, Set
 
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -102,6 +102,37 @@ class Language:
         self.frequency_threshold = frequency_threshold
         self.lemmatizer = WordNetLemmatizer()
 
+class WordFromText:
+    """
+    Represents a word extracted from text with its context and frequency information.
+
+    This class stores information about a word found in text, including its occurrence count,
+    the first sentence it appears in, which paragraph it was found in, and its frequency
+    in the language.
+    """
+    def __init__(self, word: str, first_sentence: str, first_paragraph: int, language_frequency: float):
+        """
+        Initialize a WordFromText object.
+
+        Args:
+            word: The extracted word
+            first_sentence: The first sentence containing this word
+            first_paragraph: The index of the first paragraph containing this word
+            language_frequency: The frequency of this word in the language
+        """
+        self.word = word
+        self.count = 1
+        self.first_sentence = first_sentence
+        self.first_paragraph = first_paragraph
+        self.language_frequency = language_frequency
+
+    def increment(self):
+        """
+        Increment the occurrence count of this word.
+
+        This method is called each time this word is found again in the text.
+        """
+        self.count += 1
 
 class WordProcessor:
     """
@@ -123,7 +154,7 @@ class WordProcessor:
         self.frequency_threshold = language.frequency_threshold
         self.lemmatizer = language.lemmatizer
         self.valid_words = set(words.words())
-        self.word_info: Dict[str, Dict[str, Any]] = {}
+        self.word_info: Dict[str, WordFromText] = {}
 
         ensure_nltk_resources()
 
@@ -194,16 +225,16 @@ class WordProcessor:
                 continue
 
             if lemma_word not in self.word_info:
-                self.word_info[lemma_word] = {
-                    'count': 0,
-                    'first_sentence': sentence,
-                    'first_paragraph': paragraph_index,  # Track first paragraph appearance
-                    'lang_freq': self.get_word_frequency(lemma_word),
-                }
+                self.word_info[lemma_word] = WordFromText(
+                    lemma_word,
+                    sentence,
+                    paragraph_index,
+                    self.get_word_frequency(lemma_word)
+                )
+            else:
+                self.word_info[lemma_word].increment()
 
-            self.word_info[lemma_word]['count'] += 1
-
-    def parse_text(self) -> List[Tuple[str, Dict[str, Any]]]:
+    def parse_text(self) -> List[WordFromText]:
         """
         Parse the paragraphs to extract and analyze uncommon words.
 
@@ -211,22 +242,22 @@ class WordProcessor:
             List of tuples containing lemmas and their information,
             sorted by language frequency (highest first)
         """
-        for paragraph_index, paragraph in enumerate(self.paragraphs):
-            for sentence in sent_tokenize(paragraph):
-                self.process_sentence(sentence, paragraph_index)
+        for i in range(len(self.paragraphs)):
+            for sentence in sent_tokenize(self.paragraphs[i]):
+                self.process_sentence(sentence, i)
 
         sorted_words = sorted(
-            self.word_info.items(),
-            key=lambda item: item[1]['lang_freq'],
+            self.word_info.values(),
+            key=lambda item: item.language_frequency,
             reverse=True
         )
 
         return sorted_words
 
 
-def parse_paragraphs(paragraphs: List[str], common_threshold=Config.COMMON_THRESHOLD) -> List[Tuple[str, Dict[str, Any]]]:
+def parse_paragraphs(paragraphs: List[str], common_threshold=Config.COMMON_THRESHOLD) -> List[WordFromText]:
     """
-    Parse paragraphs to extract and analyze uncommon words.
+    Parse paragraphs to extract uncommon words.
 
     Args:
         paragraphs: List of text paragraphs
@@ -239,17 +270,16 @@ def parse_paragraphs(paragraphs: List[str], common_threshold=Config.COMMON_THRES
     language = Language('en', common_threshold)
     return WordProcessor(paragraphs, language).parse_text()
 
-def parse_text(text: str, common_threshold = Config.COMMON_THRESHOLD) -> List[Tuple[str, Dict[str, Any]]]:
+def parse_text(text: str, common_threshold = Config.COMMON_THRESHOLD) -> List[WordFromText]:
     """
-    Parse text to extract and analyze uncommon words.
-    This function maintains backwards compatibility with the original API.
+    Parse text to extract uncommon words.
 
     Args:
         text: The text to analyze
         common_threshold: Words more frequent than this in their language will be ignored
 
     Returns:
-        List of tuples containing lemmas and their information,
+        List of tuples containing words and their information,
         sorted by language frequency (highest first)
     """
     return parse_paragraphs([text], common_threshold)
