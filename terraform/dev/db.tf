@@ -63,18 +63,21 @@ resource "aws_dynamodb_table" "submissions" {
 resource "aws_dynamodb_table" "summaries" {
   name         = "history_learning_summaries"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "submission_id"
-  range_key    = "paragraph"
+  hash_key     = "user_id"
+  range_key    = "submission_paragraph"
 
   attribute {
-    name = "submission_id"
+    name = "user_id"
     type = "S"
   }
 
   attribute {
-    name = "paragraph" # String like "#SUMMARY#<paragraph number>" - for query flexibility
+    # String like "#SUMMARY#<submission id>#<paragraph number>" - for query flexibility
+    name = "submission_paragraph"
     type = "S"
   }
+
+  # `summary` is expected here also
 
   tags = local.common_tags
 }
@@ -83,16 +86,17 @@ resource "aws_dynamodb_table" "summaries" {
 resource "aws_dynamodb_table" "vocabulary_words" {
   name         = "history_learning_vocabulary"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "submission_id"
-  range_key    = "paragraph_word"
+  hash_key     = "user_id"
+  range_key    = "submission_paragraph_word"
 
   attribute {
-    name = "submission_id"
+    name = "user_id"
     type = "S"
   }
 
   attribute {
-    name = "paragraph_word" # String like "#VOCAB#<paragraph number>#word" - for query flexibility
+    # String like "#VOCAB#<submission id>#<paragraph number>#word" - for query flexibility
+    name = "submission_paragraph_word"
     type = "S"
   }
 
