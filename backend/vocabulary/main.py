@@ -17,8 +17,7 @@ import signal
 import sys
 import boto3
 import time
-from common.constants import SUBMISSIONS_TABLE, VOCABULARY_QUEUE, VOCABULARY_TABLE, \
-    DYNAMODB_MAX_BATCH_SIZE
+from common.constants import VOCABULARY_QUEUE, VOCABULARY_TABLE, DYNAMODB_MAX_BATCH_SIZE
 from common.envvar import environment
 from common.logger import logger
 from common.upload_notification import poll_sqs_for_s3_file_forever, S3Upload
@@ -31,7 +30,6 @@ PARAGRAPHS_BUCKET = environment.require('PARAGRAPHS_BUCKET')
 # AWS clients
 s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
-submissions_table = dynamodb.Table(SUBMISSIONS_TABLE)
 queue_client = sqs_client.for_queue(VOCABULARY_QUEUE)
 
 def word_db_record(user_id, submission_id, word_obj: WordFromText) -> Dict[str, str|int|float]:
