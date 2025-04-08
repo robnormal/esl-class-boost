@@ -6,3 +6,6 @@ SUMMARIES_TABLE = "history_learning_summaries"
 PARAGRAPHS_QUEUE = 'history-learning-paragraphs'
 VOCABULARY_QUEUE = 'history-learning-vocabulary'
 SUMMARIES_QUEUE = 'history-learning-summaries'
+
+# Maximum number of items that can be inserted/updated at once
+DYNAMODB_MAX_BATCH_SIZE = 25
