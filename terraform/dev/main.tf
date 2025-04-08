@@ -90,7 +90,7 @@ resource "aws_s3_bucket_cors_configuration" "submissions_cors" {
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["PUT", "POST", "GET"]
-    allowed_origins = ["http://localhost:3000"]
+    allowed_origins = ["http://localhost:3000","https://app.localstack.cloud"]
     expose_headers  = ["ETag"]
     max_age_seconds = 3000
   }
