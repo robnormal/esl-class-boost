@@ -1,4 +1,5 @@
 import uuid
+import os
 import boto3
 import requests
 import chardet
@@ -75,12 +76,13 @@ def generate_upload_url():
     user_id = request.json.get('user_id')
     file_name = request.json.get('file_name')
     file_hash = request.json.get('file_hash')
+    file_extension = os.path.splitext(file_name)[1] if file_name else ""
 
     if not user_id or not file_name or not file_hash:
         return jsonify({"error": "Missing required fields: user_id, file_name, content_preview"}), 400
 
     # Compute deterministic hash using user_id + content preview
-    s3_key = f"uploads/{user_id}/{file_hash}.txt"
+    s3_key = f"uploads/{user_id}/{file_hash}{file_extension}"
 
     try:
         presigned_url = s3_client.generate_presigned_url(
