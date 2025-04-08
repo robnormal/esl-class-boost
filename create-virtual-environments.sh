@@ -19,7 +19,7 @@ find backend -type f -name "requirements.in" -print0 | while IFS= read -r -d '' 
   SERVICE_DIR=$(dirname "$SERVICE_REQ_IN")
   echo "🔧 Setting up: $SERVICE_DIR"
 
-  VENV_DIR="$SERVICE_DIR/.venv"
+  VENV_DIR="$SERVICE_DIR/.venv.$SERVICE_DIR"
 
   # Create virtual environment if not present
   if [[ ! -d "$VENV_DIR" ]]; then

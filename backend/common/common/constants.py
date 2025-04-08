@@ -9,3 +9,6 @@ SUMMARIES_QUEUE = 'history-learning-summaries'
 
 # Maximum number of items that can be inserted/updated at once
 DYNAMODB_MAX_BATCH_SIZE = 25
+
+# Limit the paragraphs we'll summarize for any document
+SUMMARIES_PER_SUBMISSION_LIMIT = 50

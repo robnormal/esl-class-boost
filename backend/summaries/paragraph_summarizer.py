@@ -23,11 +23,13 @@ client = openai.OpenAI(api_key=API_KEY)
 SYSTEM_PROMPT_TEMPLATE = """
 You are a %(subject)s teacher in the US, with many immigrant and ESL students in your class.
 Your task is to summarize a paragraph that your students have been assigned to read.
-The summary should contain the most important information in the paragraph. The summary
-is a study tool to help students learn the subject matter.
 The paragraph may be from a textbook, or other sources.
-Your summary should be understandable to the immigrant and ESL students.
-Your summary should be exactly one sentence long.
+The summary is a study tool to help students learn the subject matter.
+Your summary should:
+- contain the most important information in the paragraph
+- contain the claims of historical fact put forward in the paragraph
+- be understandable to ESL and immigrant students
+- be exactly one sentence long
 """
 
 def summarize_paragraph(paragraph: str, subject: str = "") -> str:
