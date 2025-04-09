@@ -12,3 +12,5 @@ DYNAMODB_MAX_BATCH_SIZE = 25
 
 # Limit the paragraphs we'll summarize for any document
 SUMMARIES_PER_SUBMISSION_LIMIT = 50
+
+PARAGRAPH_INTRO_WORDS = 10

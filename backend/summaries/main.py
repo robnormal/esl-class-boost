@@ -14,7 +14,8 @@ import signal
 import sys
 import boto3
 import time
-from common.constants import SUMMARIES_QUEUE, SUMMARIES_TABLE, SUMMARIES_PER_SUBMISSION_LIMIT
+from common.constants import SUMMARIES_QUEUE, SUMMARIES_TABLE, SUMMARIES_PER_SUBMISSION_LIMIT, \
+    PARAGRAPH_INTRO_WORDS
 from common.envvar import environment
 from common.logger import logger
 from common.upload_notification import poll_sqs_for_s3_file_forever, S3Upload
@@ -59,6 +60,7 @@ def process_record(s3_upload: S3Upload):
             'user_id': user_id,
             'submission_paragraph': f"#SUMMARY#{submission_id}#{i}",
             'summary': summary,
+            'paragraph_start': ' '.join(paragraph.split()[:PARAGRAPH_INTRO_WORDS]),
             'created_at': int(time.time())
         }
 
