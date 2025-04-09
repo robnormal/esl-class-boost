@@ -169,5 +169,47 @@ def get_vocabulary(file_id):
 
     return jsonify({"file_id": file_id, "vocabulary": vocab_data})
 
+@app.route("/files/<submission_id>/details", methods=["GET"])
+def get_submission_details(submission_id):
+    """Returns the first 10 words, vocabulary, and summary for each paragraph of a submission."""
+    # Fetch paragraph text from S3
+    s3_key = f"uploads/{submission_id}.txt"
+    try:
+        response = s3_client.get_object(Bucket=SUBMISSIONS_BUCKET, Key=s3_key)
+        paragraphs = response["Body"].read().decode("utf-8").split("\n")
+    except s3_client.exceptions.NoSuchKey:
+        return jsonify({"submission_id": submission_id, "error": "Paragraph text not found"}), 404
+
+    # Fetch vocabulary from DynamoDB
+    try:
+        vocab_response = vocab_table.get_item(Key={"file_id": submission_id})
+        vocab_data = vocab_response.get("Item", {}).get("vocabulary", {})
+    except Exception as e:
+        return jsonify({"submission_id": submission_id, "error": f"DynamoDB error: {str(e)}"}), 500
+
+    # Fetch summaries from S3
+    summary_key = f"summaries/{submission_id}.txt"
+    try:
+        summary_response = s3_client.get_object(Bucket=SUBMISSIONS_BUCKET, Key=summary_key)
+        summaries = summary_response["Body"].read().decode("utf-8").split("\n")
+    except s3_client.exceptions.NoSuchKey:
+        return jsonify({"submission_id": submission_id, "error": "Summaries not found"}), 404
+
+    # Combine data
+    details = []
+    for i, paragraph in enumerate(paragraphs):
+        first_10_words = " ".join(paragraph.split()[:10])
+        vocabulary = vocab_data.get(str(i), [])
+        summary = summaries[i] if i < len(summaries) else ""
+
+        details.append({
+            "paragraph_index": i,
+            "first_10_words": first_10_words,
+            "vocabulary": vocabulary,
+            "summary": summary
+        })
+
+    return jsonify({"submission_id": submission_id, "details": details})
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
