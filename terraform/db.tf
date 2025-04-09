@@ -30,16 +30,16 @@ resource "aws_dynamodb_table" "users" {
 resource "aws_dynamodb_table" "submissions" {
   name         = "history_learning_submissions"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "submission_id"
-  range_key    = "user_id"
+  range_key    = "submission_id"
+  hash_key     = "user_id"
 
   attribute {
-    name = "submission_id"
+    name = "user_id"
     type = "S"
   }
 
   attribute {
-    name = "user_id"
+    name = "submission_id"
     type = "S"
   }
 
