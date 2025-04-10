@@ -40,10 +40,6 @@ def paragraphs_from_html(file_path):
     with open(file_path, 'r', encoding='utf-8', errors='replace') as file:
         soup = BeautifulSoup(file.read(), 'html.parser')
 
-        # Remove script and style elements
-        for script in soup(["script"]):
-            script._to_plain_text()
-
         # Get text with some structure preservation
         paragraphs = []
 
