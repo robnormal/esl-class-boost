@@ -1,6 +1,7 @@
 requests
 flask
 flask_cors
+flask-cognito
 chardet
 python-dotenv
 -e ../common

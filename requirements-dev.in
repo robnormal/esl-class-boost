@@ -2,5 +2,7 @@
 six>=1.15  # necessary due to bug in dateutils, which is required by botocore
 boto3
 botocore
+boto3-stubs[essential]
 pytest
 pytest-cov
+moto
