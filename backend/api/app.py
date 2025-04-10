@@ -1,22 +1,35 @@
-import uuid
 import os
 import boto3
 import requests
-import chardet
+from boto3.dynamodb.conditions import Key
 from requests import Response
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_cognito import CognitoAuth, cognito_auth_required, current_cognito_jwt
+from functools import wraps
 
 # Load environment variables
 from dotenv import load_dotenv
 load_dotenv()
 
-from common.constants import SUBMISSIONS_TABLE, VOCABULARY_TABLE
+from common.constants import SUBMISSIONS_TABLE, VOCABULARY_TABLE, SUMMARIES_TABLE
 from common.envvar import environment
+from common.logger import logger
+from common.summary_repo import SummaryRepo
+from common.vocabulary_word_repo import VocabularyWordRepo
 
 # Flask app setup
 app = Flask(__name__)
 
+# Configure Cognito
+app.config['COGNITO_REGION'] = environment.require('AWS_REGION')
+app.config['COGNITO_USERPOOL_ID'] = environment.require('COGNITO_USERPOOL_ID')
+app.config['COGNITO_APP_CLIENT_ID'] = environment.require('COGNITO_APP_CLIENT_ID')
+app.config['COGNITO_CHECK_TOKEN_EXPIRATION'] = True
+
+cognito = CognitoAuth(app)
+
+IS_LOCAL = environment.require('IS_LOCAL')
 AWS_REGION = environment.require('AWS_REGION')
 SUBMISSIONS_BUCKET = environment.require('SUBMISSIONS_BUCKET')
 CORS_ORIGINS = environment.require('CORS_ORIGINS').split(',')
@@ -37,6 +50,26 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 # Reference DynamoDB tables
 submissions_table = dynamodb.Table(SUBMISSIONS_TABLE)
 vocab_table = dynamodb.Table(VOCABULARY_TABLE)
+summary_table = dynamodb.Table(SUMMARIES_TABLE)
+
+# New decorator to only apply cognito in prod
+def conditional_cognito_auth(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not IS_LOCAL:
+            # Apply Cognito authentication in non-development environments
+            return cognito_auth_required(f)(*args, **kwargs)
+        else:
+            # Bypass Cognito authentication in development
+            return f(*args, **kwargs)
+    return decorated_function
+
+def get_user_id():
+    if app.config['ENV'] == 'development':
+        return 'dev-user'
+    else:
+        # Use Cognito for production
+        return current_cognito_jwt['sub']
 
 def submitted_file_content(req) -> tuple[bytes, None]|tuple[None, tuple[Response, int]]:
     """
@@ -68,6 +101,7 @@ def submitted_file_content(req) -> tuple[bytes, None]|tuple[None, tuple[Response
         return content_bytes, None
 
 @app.route("/generate-upload-url", methods=["POST"])
+@conditional_cognito_auth
 def generate_upload_url():
     """
     Generates a presigned S3 URL for uploading a file.
@@ -99,116 +133,59 @@ def generate_upload_url():
         's3_key': s3_key
     })
 
-@app.route("/submit-text", methods=["POST"])
-def submit_text():
-    """
-    Accepts a file, URL, or raw text, saves it to S3
-    """
-    user_id = request.form.get("user_id")
-    if not user_id:
-        return jsonify({"error": "Missing required field: 'user_id'"}), 400
+def get_submission_vocabulary(user_id, submission_id):
+    vocab_response = vocab_table.query(
+        KeyConditionExpression=Key('user_id').eq(user_id) &
+                                Key('submission_paragraph_word').begins_with(f"#VOCAB#{submission_id}#")
+    )
+    vocab_data = {}
+    for item in vocab_response.get('Items', []):
+        _, _, paragraph_number, word = item['submission_paragraph_word'].split('#')
+        if paragraph_number not in vocab_data:
+            vocab_data[paragraph_number] = []
+        vocab_data[paragraph_number].append(word)
 
-    file_bytes, error_response = submitted_file_content(request)
-    if error_response:
-        return error_response
+    return vocab_data
 
-    try:
-        detected_encoding = chardet.detect(file_bytes)["encoding"]
-        content_text = file_bytes.decode(detected_encoding or "utf-8")
-    except Exception as e:
-        return jsonify({"error": f"Failed to decode content: {str(e)}"}), 400
+def get_submission_summaries(user_id, submission_id):
+    summary_response = summary_table.query(
+        KeyConditionExpression=Key('user_id').eq(user_id) &
+                                Key('submission_paragraph').begins_with(f"#SUMMARY#{submission_id}#")
+    )
+    summaries = {}
+    for item in summary_response.get('Items', []):
+        _, _, paragraph_number = item['submission_paragraph'].split('#')
+        summaries[paragraph_number] = item['summary']
 
-    submission_id = str(uuid.uuid4())
-    s3_key = f"uploads/{submission_id}.txt"
-    s3_url = f"https://{SUBMISSIONS_BUCKET}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
-
-    try:
-        s3_client.put_object(Bucket=SUBMISSIONS_BUCKET, Key=s3_key, Body=content_text.encode("utf-8"))
-
-    except Exception as e:
-        return jsonify({"error": f"AWS error: {str(e)}"}), 500
-
-    return jsonify({
-        "submission_id": submission_id,
-        "file_url": s3_url,
-        "message": "Text successfully submitted and saved."
-    })
-
-@app.route("/files", methods=["GET"])
-def list_files():
-    """Returns the list of submitted file URLs from DynamoDB."""
-    try:
-        response = submissions_table.scan()
-        files = response.get("Items", [])
-    except Exception as e:
-        return jsonify({"error": f"DynamoDB error: {str(e)}"}), 500
-
-    return jsonify(files)
-
-@app.route("/files/<file_id>/summaries", methods=["GET"])
-def get_summaries(file_id):
-    """Fetches paragraph summaries from an S3 file."""
-    s3_key = f"summaries/{file_id}.txt"
-
-    try:
-        response = s3_client.get_object(Bucket=SUBMISSIONS_BUCKET, Key=s3_key)
-        summaries = response["Body"].read().decode("utf-8").split("\n")
-    except s3_client.exceptions.NoSuchKey:
-        return jsonify({"file_id": file_id, "error": "Summaries not found"}), 404
-
-    return jsonify({"file_id": file_id, "summaries": summaries})
-
-@app.route("/files/<file_id>/vocabulary", methods=["GET"])
-def get_vocabulary(file_id):
-    """Returns extracted vocabulary words per paragraph from DynamoDB."""
-    try:
-        response = vocab_table.get_item(Key={"file_id": file_id})
-        vocab_data = response.get("Item", {}).get("vocabulary", {})
-    except Exception as e:
-        return jsonify({"file_id": file_id, "error": f"DynamoDB error: {str(e)}"}), 500
-
-    return jsonify({"file_id": file_id, "vocabulary": vocab_data})
+    return summaries
 
 @app.route("/files/<submission_id>/details", methods=["GET"])
+@conditional_cognito_auth
 def get_submission_details(submission_id):
     """Returns the first 10 words, vocabulary, and summary for each paragraph of a submission."""
-    # Fetch paragraph text from S3
-    s3_key = f"uploads/{submission_id}.txt"
-    try:
-        response = s3_client.get_object(Bucket=SUBMISSIONS_BUCKET, Key=s3_key)
-        paragraphs = response["Body"].read().decode("utf-8").split("\n")
-    except s3_client.exceptions.NoSuchKey:
-        return jsonify({"submission_id": submission_id, "error": "Paragraph text not found"}), 404
+
+    user_id = get_user_id()
 
     # Fetch vocabulary from DynamoDB
     try:
-        vocab_response = vocab_table.get_item(Key={"file_id": submission_id})
-        vocab_data = vocab_response.get("Item", {}).get("vocabulary", {})
+        vocab_data = VocabularyWordRepo(vocab_table).get_by_submission(user_id, submission_id)
     except Exception as e:
         return jsonify({"submission_id": submission_id, "error": f"DynamoDB error: {str(e)}"}), 500
 
-    # Fetch summaries from S3
-    summary_key = f"summaries/{submission_id}.txt"
     try:
-        summary_response = s3_client.get_object(Bucket=SUBMISSIONS_BUCKET, Key=summary_key)
-        summaries = summary_response["Body"].read().decode("utf-8").split("\n")
-    except s3_client.exceptions.NoSuchKey:
-        return jsonify({"submission_id": submission_id, "error": "Summaries not found"}), 404
+        summaries = SummaryRepo(summary_table).get_by_submission(user_id, submission_id)
+    except Exception as e:
+        return jsonify({"submission_id": submission_id, "error": f"DynamoDB error: {str(e)}"}), 500
 
     # Combine data
     details = []
-    for i, paragraph in enumerate(paragraphs):
-        first_10_words = " ".join(paragraph.split()[:10])
-        vocabulary = vocab_data.get(str(i), [])
-        summary = summaries[i] if i < len(summaries) else ""
-
+    paragraph_count = max(len(vocab_data), len(summaries))
+    for i in range(paragraph_count):
         details.append({
             "paragraph_index": i,
-            "first_10_words": first_10_words,
-            "vocabulary": vocabulary,
-            "summary": summary
+            "vocabulary": vocab_data[i],
+            "summary": summaries[i] if i < len(summaries) else ""
         })
-
     return jsonify({"submission_id": submission_id, "details": details})
 
 if __name__ == "__main__":
