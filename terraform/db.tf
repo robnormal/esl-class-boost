@@ -72,7 +72,7 @@ resource "aws_dynamodb_table" "summaries" {
   }
 
   attribute {
-    # String like "#SUMMARY#<submission id>#<paragraph number>" - for query flexibility
+    # String like "SUMMARY#<submission id>#<paragraph number>" - for query flexibility
     name = "submission_paragraph"
     type = "S"
   }
@@ -95,7 +95,7 @@ resource "aws_dynamodb_table" "vocabulary_words" {
   }
 
   attribute {
-    # String like "#VOCAB#<submission id>#<paragraph number>#word" - for query flexibility
+    # String like "VOCAB#<submission id>#<paragraph number>#word" - for query flexibility
     name = "submission_paragraph_word"
     type = "S"
   }
