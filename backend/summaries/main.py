@@ -13,15 +13,13 @@ import json
 import signal
 import sys
 import boto3
-import time
-from common.constants import SUMMARIES_QUEUE, SUMMARIES_TABLE, SUMMARIES_PER_SUBMISSION_LIMIT, \
-    PARAGRAPH_INTRO_WORDS
+from common.constants import SUMMARIES_QUEUE, SUMMARIES_PER_SUBMISSION_LIMIT, PARAGRAPH_INTRO_WORDS
 from common.envvar import environment
 from common.logger import logger
 from common.upload_notification import poll_sqs_for_s3_file_forever, S3Upload
 from common.sqs_client import sqs_client
+from common.summary_repo import NewSummary, summary_repo
 from paragraph_summarizer import summarize_paragraph
-
 
 # Configuration
 PARAGRAPHS_BUCKET = environment.require('PARAGRAPHS_BUCKET')
@@ -29,7 +27,6 @@ PARAGRAPHS_BUCKET = environment.require('PARAGRAPHS_BUCKET')
 # AWS clients
 s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
-summaries_table = dynamodb.Table(SUMMARIES_TABLE)
 queue_client = sqs_client.for_queue(SUMMARIES_QUEUE)
 
 
@@ -50,22 +47,20 @@ def process_record(s3_upload: S3Upload):
 
     logger.info(f"Summarizing {len(paragraphs)} paragraphs for submission {submission_id}")
     for i, paragraph in enumerate(paragraphs):
-        summary = summarize_paragraph(paragraph)
-        if not summary:
+        summary_text = summarize_paragraph(paragraph)
+        if not summary_text:
             logger.error(f"No summary found for submission {submission_id}, paragraph {i}")
             continue
 
-        # Create a record for the summary
-        summary_record = {
-            'user_id': user_id,
-            'submission_paragraph': f"#SUMMARY#{submission_id}#{i}",
-            'summary': summary,
-            'paragraph_start': ' '.join(paragraph.split()[:PARAGRAPH_INTRO_WORDS]),
-            'created_at': int(time.time())
-        }
-
         # Save each summary immediately instead of batching
-        summaries_table.put_item(Item=summary_record)
+        new_summary = NewSummary(
+            user_id=user_id,
+            submission_id=submission_id,
+            paragraph_number=i,
+            paragraph_start=' '.join(paragraph.split()[:PARAGRAPH_INTRO_WORDS]),
+            summary=summary_text,
+        )
+        summary_repo.create(new_summary)
         summaries_count += 1
 
     logger.info(f"Successfully saved {summaries_count} paragraph summaries for submission {submission_id}")

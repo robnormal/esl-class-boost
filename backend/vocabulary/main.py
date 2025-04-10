@@ -3,9 +3,6 @@
 #
 # Do *NOT* load custom code before load_dotenv(), or else the env variables might not be loaded
 ###
-from decimal import Decimal
-from typing import Dict
-
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -17,11 +14,14 @@ import signal
 import sys
 import boto3
 import time
-from common.constants import VOCABULARY_QUEUE, VOCABULARY_TABLE, DYNAMODB_MAX_BATCH_SIZE
+from decimal import Decimal
+from typing import Dict
+from common.constants import VOCABULARY_QUEUE
 from common.envvar import environment
 from common.logger import logger
 from common.upload_notification import poll_sqs_for_s3_file_forever, S3Upload
 from common.sqs_client import sqs_client
+from common.vocabulary_word_repo import NewVocabularyWord, vocabulary_word_repo
 from nlp_word_extraction import parse_paragraphs, WordFromText
 
 # Configuration
@@ -61,17 +61,17 @@ def process_record(s3_upload: S3Upload):
     logger.info(f"Processing {len(words)} vocabulary words for submission {submission_id}")
 
     # Prepare batch write items
-    items_to_write = []
+    new_vocabulary_words = []
     for word_obj in words:
-        record = word_db_record(user_id, submission_id, word_obj)
-        items_to_write.append({'PutRequest': {'Item': record}})
+        record = NewVocabularyWord(
+            user_id=user_id,
+            submission_id=submission_id,
+            paragraph_number=word_obj.first_paragraph,
+            word=word_obj.word,
+        )
+        new_vocabulary_words.append(record)
 
-    # Process items in batches
-    for i in range(0, len(items_to_write), DYNAMODB_MAX_BATCH_SIZE):
-        batch = items_to_write[i:i + DYNAMODB_MAX_BATCH_SIZE]
-        dynamodb.batch_write_item(RequestItems={VOCABULARY_TABLE: batch})
-        logger.info(f"Successfully wrote batch of {len(batch)} items")
-
+    vocabulary_word_repo.create_many(new_vocabulary_words)
     logger.info(f"Successfully saved {len(words)} vocabulary words for submission {submission_id}")
 
 
