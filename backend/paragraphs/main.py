@@ -66,7 +66,7 @@ def upload_paragraphs(bucket, key, paragraphs):
 
 def process_record(s3_upload: S3Upload):
     # File hash functions as the submission_id
-    save_submission_to_db(s3_upload.file_hash, s3_upload.user_id, 'NEW')
+    save_submission_to_db(s3_upload.user_id, s3_upload.file_hash, 'NEW')
 
     paragraphs = extract_paragraphs(s3_upload.tmp_file_path)
 
