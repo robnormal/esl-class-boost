@@ -81,7 +81,10 @@ def main():
 
     for s3_upload in poll_sqs_for_s3_file_forever(queue_client, 5):
         logger.info(f"Processing file from bucket {s3_upload.bucket} with key {s3_upload.key}...")
-        process_record(s3_upload)
+        try:
+            process_record(s3_upload)
+        except Exception as e:
+            logger.error(f"Error processing file {s3_upload.key}: {e}", exc_info=True)
 
 if __name__ == "__main__":
     main()
