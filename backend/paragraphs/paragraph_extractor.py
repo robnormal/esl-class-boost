@@ -13,6 +13,7 @@ try:
     import mammoth
     from striprtf.striprtf import rtf_to_text
     from common.logger import logger
+    from paragraphs_from_html import extract_paragraphs_from_html
 except ImportError:
     import traceback
     logging.error(traceback.format_exc())
@@ -34,33 +35,6 @@ def paragraphs_from_word(file_path):
         with open(file_path, 'rb') as docx_file:
             result = mammoth.extract_raw_text(docx_file)
             return paragraphs_from_text(result.value)
-
-def paragraphs_from_html(file_path):
-    """Extract text from HTML files. """
-    with open(file_path, 'r', encoding='utf-8', errors='replace') as file:
-        soup = BeautifulSoup(file.read(), 'html.parser')
-
-        # Get text with some structure preservation
-        paragraphs = []
-
-        # Extract paragraph content
-        for para in soup.find_all(['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
-            text = para.get_text().strip()
-            if text:
-                # Add heading indicator
-                if para.name.startswith('h'):
-                    text = f"[{para.name.upper()}] {text}"
-                paragraphs.append(text)
-
-        # Extract table content
-        for table in soup.find_all('table'):
-            paragraphs.append("[TABLE]")
-            for row in table.find_all('tr'):
-                cells = [cell.get_text().strip() for cell in row.find_all(['td', 'th'])]
-                if any(cells):
-                    paragraphs.append(" | ".join(cells))
-
-        return paragraphs
 
 def paragraphs_from_rtf(file_path):
     """Extract text from RTF files."""
@@ -185,7 +159,8 @@ def paragraphs_from_file(file_path):
 
     # HTML
     elif file_extension in ['.html', '.htm']:
-        paragraphs = paragraphs_from_html(file_path)
+        with open(file_path, 'r', encoding='utf-8', errors='replace') as file:
+            paragraphs = extract_paragraphs_from_html(file)
 
     # Plain text files
     elif file_extension in ['.txt', '.md', '.csv', '.json', '.xml']:
