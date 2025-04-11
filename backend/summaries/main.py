@@ -3,6 +3,9 @@
 #
 # Do *NOT* load custom code before load_dotenv(), or else the env variables might not be loaded
 ###
+from time import sleep
+from typing import Tuple
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -29,18 +32,24 @@ s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
 queue_client = sqs_client.for_queue(SUMMARIES_QUEUE)
 
+def filter_paragraphs(paragraphs: list[str]) -> Tuple[list[str], bool]:
+    long_paragraphs = [paragraph for paragraph in paragraphs if len(paragraph.strip()) >= 300]
+    count = len(long_paragraphs)
+    if count <= SUMMARIES_PER_SUBMISSION_LIMIT:
+        return long_paragraphs, True
+    else:
+        return long_paragraphs[:SUMMARIES_PER_SUBMISSION_LIMIT], False
 
 def process_record(s3_upload: S3Upload):
     with open(s3_upload.tmp_file_path, 'r', encoding='utf-8', errors='replace') as file:
-        paragraphs = json.load(file)
+        all_paragraphs = json.load(file)
+
+    paragraphs, all_included = filter_paragraphs(all_paragraphs)
+    if not all_included:
+        logger.error(f"Submission {s3_upload.file_hash} has {len(all_paragraphs)} paragraphs. Limiting to {SUMMARIES_PER_SUBMISSION_LIMIT}.")
 
     user_id = s3_upload.user_id
     submission_id = s3_upload.file_hash
-
-    paragraph_count = len(paragraphs)
-    if paragraph_count > SUMMARIES_PER_SUBMISSION_LIMIT:
-        logger.error(f"Submission {submission_id} has {paragraph_count} paragraphs. Limiting to {SUMMARIES_PER_SUBMISSION_LIMIT}.")
-        paragraphs = paragraphs[:SUMMARIES_PER_SUBMISSION_LIMIT]
 
     # Process each paragraph and save its summary immediately
     summaries_count = 0

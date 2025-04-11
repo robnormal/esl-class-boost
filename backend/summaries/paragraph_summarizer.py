@@ -51,7 +51,7 @@ def summarize_paragraph(paragraph: str, subject: str = "") -> str:
     """
 
     # Do not summarize very short paragraphs
-    if len(paragraph.strip()) < 200:
+    if len(paragraph.strip()) < 250:
         return paragraph
 
     try:
