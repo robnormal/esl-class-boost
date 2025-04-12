@@ -1,4 +1,3 @@
-// src/App.tsx
 import React, { useState, useEffect, JSX } from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
 import { Amplify } from 'aws-amplify';
