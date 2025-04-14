@@ -46,9 +46,9 @@ def group_blocks(blocks, min_words=150):
             group.append(blocks[i])
             text, wc = get_text_word_count(blocks[i])
             word_count += wc
+            i += 1
             if word_count >= min_words:
                 break
-            i += 1
         if group:
             groups.append(group)
     return groups

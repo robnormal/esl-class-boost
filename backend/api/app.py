@@ -200,7 +200,7 @@ def get_submission_details(submission_id):
 
     # Combine data
     details = []
-    paragraph_count = max(len(vocab_data), len(summaries))
+    paragraph_count = max(len(words_by_paragraph), len(summaries_by_paragraph.keys()))
     for i in range(paragraph_count):
         details.append({
             "paragraph_index": i,
