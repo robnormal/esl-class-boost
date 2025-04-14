@@ -5,6 +5,7 @@ interface ParagraphDetails {
   paragraph_index: number;
   vocabulary: string[];
   summary: string;
+  paragraph_start: string;
 }
 
 interface SubmissionDetailsProps {
@@ -19,7 +20,7 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        const response = await fetch(`/files/${submissionId}/details`);
+        const response = await fetch(`http://localhost:5000/files/${submissionId}/details`);
         if (!response.ok) {
           throw new Error('Failed to fetch submission details');
         }
@@ -51,7 +52,7 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
     <div>
       {details.map((detail, index) => (
         <div key={index} className="paragraph-detail">
-          <h3>Paragraph {detail.paragraph_index + 1}</h3>
+          <h3>{detail.paragraph_start}</h3>
           <p><strong>Summary:</strong> {detail.summary}</p>
           <p><strong>Vocabulary:</strong> {detail.vocabulary.join(', ')}</p>
         </div>
@@ -59,3 +60,5 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
     </div>
   );
 };
+
+export default SubmissionDetails;

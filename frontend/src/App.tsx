@@ -129,6 +129,7 @@ function App(): JSX.Element {
             </div>
           )
         }/>
+        <Route path="/submission/:submissionId" element={<SubmissionDetailsWrapper/>}/>
       </Routes>
     </div>
   );
