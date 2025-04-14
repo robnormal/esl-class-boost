@@ -50,11 +50,19 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
 
   return (
     <div>
+      <h1 className="document-title">Study Guide</h1>
       {details.map((detail, index) => (
-        <div key={index} className="paragraph-detail">
-          <h3>{detail.paragraph_start}</h3>
-          <p><strong>Summary:</strong> {detail.summary}</p>
-          <p><strong>Vocabulary:</strong> {detail.vocabulary.join(', ')}</p>
+        <div key={index} className="paragraph-study-guide">
+          <h3 className="paragraph-start">{detail.paragraph_start}...</h3>
+          <div className="paragraph-summary">{detail.summary}</div>
+          <div className="vocabulary-section">
+            <div className="vocabulary-title">Vocabulary Words</div>
+            <ul className="vocabulary-list">
+              {detail.vocabulary.map((word, i) => (
+                <li key={i}>{word}</li>
+              ))}
+            </ul>
+          </div>
         </div>
       ))}
     </div>
