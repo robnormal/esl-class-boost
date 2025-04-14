@@ -38,7 +38,7 @@ class VocabularyWordRepo:
             user_id=item.get('user_id'),
             submission_id=submission_id,
             paragraph_number=int(paragraph_number),
-            word=item.get('word'),
+            word=word,
             created_at=item.get('created_at'),
         )
 

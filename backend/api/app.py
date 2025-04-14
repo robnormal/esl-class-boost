@@ -1,4 +1,6 @@
 import os
+from typing import List, Dict
+
 import boto3
 import requests
 from boto3.dynamodb.conditions import Key
@@ -16,7 +18,7 @@ from common.constants import SUBMISSIONS_TABLE, VOCABULARY_TABLE, SUMMARIES_TABL
 from common.envvar import environment
 from common.logger import logger
 from common.summary_repo import SummaryRepo
-from common.vocabulary_word_repo import VocabularyWordRepo
+from common.vocabulary_word_repo import VocabularyWordRepo, VocabularyWord
 
 # Flask app setup
 app = Flask(__name__)
@@ -65,7 +67,7 @@ def conditional_cognito_auth(f):
     return decorated_function
 
 def get_user_id():
-    if app.config['ENV'] == 'development':
+    if IS_LOCAL:
         return 'dev-user'
     else:
         # Use Cognito for production
@@ -159,23 +161,42 @@ def get_submission_summaries(user_id, submission_id):
 
     return summaries
 
+def group_by_paragraph(vocabulary_words: List[VocabularyWord]) -> Dict[int, List[str]]:
+    grouped_by_paragraph = {}
+    for vocabulary_word in vocabulary_words:
+        if vocabulary_word.paragraph_number not in grouped_by_paragraph:
+            grouped_by_paragraph[vocabulary_word.paragraph_number] = []
+        grouped_by_paragraph[vocabulary_word.paragraph_number].append(vocabulary_word.word)
+    return grouped_by_paragraph
+
 @app.route("/files/<submission_id>/details", methods=["GET"])
 @conditional_cognito_auth
 def get_submission_details(submission_id):
-    """Returns the first 10 words, vocabulary, and summary for each paragraph of a submission."""
+    logger.info(f'get_submission_details ${submission_id}')
 
+    """Returns the first 10 words, vocabulary, and summary for each paragraph of a submission."""
     user_id = get_user_id()
+
+    # FIXME: We are using this as the submission_id in vocabulary and summaries
+    paragraphs_filename = f"{submission_id}_paragraphs.json"
 
     # Fetch vocabulary from DynamoDB
     try:
-        vocab_data = VocabularyWordRepo(vocab_table).get_by_submission(user_id, submission_id)
+        vocab_data = VocabularyWordRepo(vocab_table).get_by_submission(user_id, paragraphs_filename)
     except Exception as e:
+        logger.error(e, exc_info=True)
         return jsonify({"submission_id": submission_id, "error": f"DynamoDB error: {str(e)}"}), 500
 
     try:
-        summaries = SummaryRepo(summary_table).get_by_submission(user_id, submission_id)
+        summaries = SummaryRepo(summary_table).get_by_submission(user_id, paragraphs_filename)
     except Exception as e:
+        logger.error(e, exc_info=True)
         return jsonify({"submission_id": submission_id, "error": f"DynamoDB error: {str(e)}"}), 500
+
+    words_by_paragraph = group_by_paragraph(vocab_data)
+    summaries_by_paragraph = {}
+    for summary in summaries:
+        summaries_by_paragraph[summary.paragraph_number] = summary
 
     # Combine data
     details = []
@@ -183,8 +204,9 @@ def get_submission_details(submission_id):
     for i in range(paragraph_count):
         details.append({
             "paragraph_index": i,
-            "vocabulary": vocab_data[i],
-            "summary": summaries[i] if i < len(summaries) else ""
+            "vocabulary": words_by_paragraph.get(i, []),
+            "summary": summaries_by_paragraph[i].summary if i in summaries_by_paragraph else "",
+            "paragraph_start": summaries_by_paragraph[i].paragraph_start if i in summaries_by_paragraph else "",
         })
     return jsonify({"submission_id": submission_id, "details": details})
 
