@@ -5,6 +5,8 @@ import { getCurrentUser, signOut } from 'aws-amplify/auth';
 import '@aws-amplify/ui-react/styles.css';
 import './App.css';
 import SubmissionForm from './SubmissionForm';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import SubmissionDetails from './SubmissionDetails';
 
 type CurrentUser = Awaited<ReturnType<typeof getCurrentUser>>;
 
@@ -35,9 +37,18 @@ if (!IS_DEV) {
   });
 }
 
+import { useParams } from 'react-router-dom';
+
+function SubmissionDetailsWrapper() {
+  const { submissionId } = useParams();
+  if (!submissionId) return <div>Invalid submission ID</div>;
+  return <SubmissionDetails submissionId={submissionId} />;
+}
+
 function App(): JSX.Element {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     checkAuthState();
@@ -46,7 +57,7 @@ function App(): JSX.Element {
   async function checkAuthState(): Promise<void> {
     if (IS_DEV) {
       // Mock user for development
-      setUser({ username: 'dev-user', userId: 'dev-user-id' });
+      setUser({username: 'dev-user', userId: 'dev-user-id'});
       setIsLoading(false);
       return;
     }
@@ -85,38 +96,40 @@ function App(): JSX.Element {
 
   return (
     <div className="app-container">
-      {user ? (
-        <div className="greeting-container">
-          <h1>History Learning Platform</h1>
-          <p>Welcome, {user.username}!</p>
-          <div className="dashboard-container">
-            <h2>Your Dashboard</h2>
-            <p>This is where you would see your learning progress and activities.</p>
-
-            {/* ✅ Submission Form */}
-            <div className="submission-form">
-              <SubmissionForm userId={user.username} />
-            </div>
-          </div>
-          <button onClick={handleSignOut} className="sign-out-button">
-            Sign Out
-          </button>
-        </div>
-      ) : (
-        <div className="login-container">
-          <h1>History Learning Platform</h1>
-          <p>Please sign in to access your learning materials</p>
-          <Authenticator initialState="signIn" hideSignUp components={components}>
-            {({ signOut }: { signOut?: () => void }) => (
-              <div>
-                <h2>Welcome back!</h2>
-                <p>You've successfully signed in.</p>
-                <button onClick={signOut}>Sign out</button>
+      <Routes>
+        <Route path="/" element={
+          user ? (
+            <div className="greeting-container">
+              <h1>History Learning Platform</h1>
+              <p>Welcome, {user.username}!</p>
+              <div className="dashboard-container">
+                <h2>Your Dashboard</h2>
+                <div className="submission-form">
+                  <SubmissionForm userId={user.username}
+                                  onSubmitted={(id) => navigate(`/submission/${id}`)}/>
+                </div>
               </div>
-            )}
-          </Authenticator>
-        </div>
-      )}
+              <button onClick={handleSignOut} className="sign-out-button">
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <div className="login-container">
+              <h1>History Learning Platform</h1>
+              <p>Please sign in to access your learning materials</p>
+              <Authenticator initialState="signIn" hideSignUp components={components}>
+                {({signOut}: { signOut?: () => void }) => (
+                  <div>
+                    <h2>Welcome back!</h2>
+                    <p>You've successfully signed in.</p>
+                    <button onClick={signOut}>Sign out</button>
+                  </div>
+                )}
+              </Authenticator>
+            </div>
+          )
+        }/>
+      </Routes>
     </div>
   );
 }

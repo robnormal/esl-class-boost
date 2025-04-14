@@ -4,22 +4,23 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "aws-amplify": "^6.13.6",
     "@aws-amplify/ui-react": "^6.9.5",
+    "aws-amplify": "^6.13.6",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.5.0"
   },
   "devDependencies": {
+    "@aws-amplify/backend": "^1.14.3",
+    "@aws-amplify/backend-cli": "^1.5.0",
     "@types/node": "^22.13.13",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.8.2",
-    "vite": "^6.2.3",
-    "@aws-amplify/backend": "^1.14.3",
-    "@aws-amplify/backend-cli": "^1.5.0",
     "aws-cdk": "^2.1006.0",
-    "aws-cdk-lib": "^2.185.0"
+    "aws-cdk-lib": "^2.185.0",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.3"
   },
   "scripts": {
     "dev": "vite",
