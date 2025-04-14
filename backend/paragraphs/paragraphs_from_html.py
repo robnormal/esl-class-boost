@@ -35,7 +35,7 @@ def get_leaf_blocks(soup):
                     blocks.append(tag)
     return blocks
 
-def group_blocks(blocks, min_words=150, max_words=250):
+def group_blocks(blocks, min_words=150):
     """Group block elements into paragraph-like chunks based on word count."""
     groups = []
     i = 0
@@ -43,17 +43,17 @@ def group_blocks(blocks, min_words=150, max_words=250):
         group = []
         word_count = 0
         while i < len(blocks):
-            text, wc = get_text_word_count(blocks[i])
-            if word_count + wc > max_words and word_count >= min_words:
-                break
             group.append(blocks[i])
+            text, wc = get_text_word_count(blocks[i])
             word_count += wc
+            if word_count >= min_words:
+                break
             i += 1
         if group:
             groups.append(group)
     return groups
 
-def extract_paragraphs_from_html(file_handle, min_words=150, max_words=250) -> List[str]:
+def extract_paragraphs_from_html(file_handle, min_words=150) -> List[str]:
     soup = BeautifulSoup(file_handle, "html.parser")
 
     # Clean soup by removing non-visible elements
@@ -61,7 +61,7 @@ def extract_paragraphs_from_html(file_handle, min_words=150, max_words=250) -> L
         tag.decompose()
 
     leaf_blocks = get_leaf_blocks(soup)
-    block_groups = group_blocks(leaf_blocks, min_words=min_words, max_words=max_words)
+    block_groups = group_blocks(leaf_blocks, min_words=min_words)
 
     # Build final result with text and HTML for each paragraph group
     result = []
