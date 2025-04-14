@@ -89,6 +89,22 @@ class SummaryRepo:
                 logger.error(f"Invalid summary {item.get('user_id')}/{item.get('submission_paragraph')}")
         return summaries
 
+    def delete_by_submission(self, user_id, submission_id):
+        response = self.table.query(
+            KeyConditionExpression=Key('user_id').eq(user_id) &
+                                   Key('submission_paragraph').begins_with(f"SUMMARY#{submission_id}#")
+        )
+
+        items_to_delete = response.get('Items', [])
+        with self.table.batch_writer() as batch:
+            for item in items_to_delete:
+                batch.delete_item(
+                    Key={
+                        'user_id': item['user_id'],
+                        'submission_paragraph': item['submission_paragraph']
+                    }
+                )
+
 dynamodb = boto3.resource('dynamodb')
 summaries_table = dynamodb.Table(SUMMARIES_TABLE)
 summary_repo = SummaryRepo(summaries_table)

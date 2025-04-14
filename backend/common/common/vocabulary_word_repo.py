@@ -88,6 +88,22 @@ class VocabularyWordRepo:
                 logger.error(f"Invalid vocabulary_word {item.get('user_id')}/{item.get('submission_paragraph_word')}")
         return vocabulary_words
 
+    def delete_by_submission(self, user_id, submission_id):
+        response = self.table.query(
+            KeyConditionExpression=Key('user_id').eq(user_id) &
+                                   Key('submission_paragraph_word').begins_with(f"VOCAB#{submission_id}#")
+        )
+
+        items_to_delete = response.get('Items', [])
+        with self.table.batch_writer() as batch:
+            for item in items_to_delete:
+                batch.delete_item(
+                    Key={
+                        'user_id': item['user_id'],
+                        'submission_paragraph_word': item['submission_paragraph_word']
+                    }
+                )
+
 dynamodb = boto3.resource('dynamodb')
 vocab_table = dynamodb.Table(VOCABULARY_TABLE)
 vocabulary_word_repo = VocabularyWordRepo(vocab_table)
