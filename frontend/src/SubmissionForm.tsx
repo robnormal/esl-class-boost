@@ -121,7 +121,7 @@ function SubmissionForm({ userId }: Props) {
       <h3>Upload a File</h3>
       <input
         type="file"
-        accept=".txt"
+        accept=".txt,.pdf,.jpg,.jpeg,.png,.docx,.doc,.rtf,.html,.htm,.md"
         onChange={(e) => setFile(e.target.files?.[0] || null)}
       />
       <button type="submit" disabled={!file}>Submit</button>
