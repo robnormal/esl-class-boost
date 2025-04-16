@@ -5,26 +5,19 @@ This script demonstrates how to use Google Cloud's Document AI
 to process a document and extract paragraphs rather than fixed-size chunks.
 """
 
-import pickle
-import os
 import re
-from typing import List, Dict, Any, MutableSequence
+from typing import List, MutableSequence
 
 from google.cloud import documentai, documentai_v1
 from common.logger import logger
 
-PROJECT_ID = "flash-spot-456815-c3"
-LOCATION = "us"  # or "eu" depending on your processor location
-PROCESSOR_ID = "59e7e67c38c56e39"
-# FILE_PATH = '/home/rob/Downloads/Progressives Wynn.pdf'
-FILE_PATH = '/home/rob/Downloads/KKK Americanism.pdf'
-JSON_PATH = 'test-file-0.json'
+MID_WORD_END_REGEX = re.compile('\\w[—\\-]$') # hyphenated
+MID_SENTENCE_END_REGEX = re.compile('[a-z]$')
+MID_SENTENCE_BEGIN_REGEX = re.compile('^[a-z]')
 
-PICKLE_DOC_PATH = 'my_document.pkl'
-
-MID_SENTENCE_END_REGEX = re.compile('[a-z—\-]')
-MID_WORD_END_REGEX = re.compile('[a-z]')
-MID_SENTENCE_BEGIN_REGEX = re.compile('[a-z]')
+type DocAILayoutBlock = documentai_v1.types.Document.DocumentLayout.DocumentLayoutBlock
+type DocAIPageBlock = documentai_v1.types.Document.Page.Block
+type DocAIBlock = DocAILayoutBlock|DocAIPageBlock
 
 def send_to_layout_processor(
         project_id: str,
@@ -74,131 +67,89 @@ def send_to_layout_processor(
     response = client.process_document(request=request)
     return response.document
 
-def is_paragraph(text: str) -> bool:
+def is_paragraph_block(block: DocAILayoutBlock) -> bool:
     """
-    Guess whether the given text is a paragraph.
+    Guess whether the given block represents a paragraph.
 
     Args:
-        text: The input text to evaluate.
+        block: The input text to evaluate.
 
     Returns:
         A boolean indicating if the text is a paragraph (True) or not (False).
     """
-    text = text.strip()
+    if not block.text_block:
+        return False
 
+    text = block.text_block.text.strip()
     if not text:
         return False
-
-    # Heuristic 1: Paragraphs are usually longer than headings or page numbers
-    if len(text) < 40:
+    # Paragraphs are usually longer than headings or page numbers
+    elif len(text) <= 40:
         return False
-
-    # Heuristic 3: Paragraphs usually do not contain only uppercase letters
-    if text.isupper():
+    # Paragraphs usually do not contain only uppercase letters
+    elif len(text) <= 80 and text.isupper():
         return False
+    else:
+        return True
 
-    return True
 
-
-def extract_text_from_blocks(blocks: MutableSequence[documentai_v1.types.Document.Page.Block], paragraphs = None) -> List[str]:
+def paragraph_objects_from_blocks(blocks: MutableSequence[DocAILayoutBlock], paragraphs = None) -> List[DocAILayoutBlock]:
     if paragraphs is None:
         paragraphs = []
     for block in blocks:
-        if block.layout.type_ == documentai.Document.Layout.Type.PARAGRAPH:
-            paragraphs.append(block.layout.text)
-        if block.layout.blocks:
-            extract_text_from_blocks(block.layout.blocks, paragraphs)
+        if block.text_block:
+            if block.text_block.type_ == 'paragraph':
+                paragraphs.append(block)
+            if block.text_block.blocks:
+                paragraph_objects_from_blocks(block.text_block.blocks, paragraphs)
     return paragraphs
 
-def starts_mid_sentence(paragraph: str) -> bool:
-    return bool(paragraph and MID_SENTENCE_END_REGEX.match(paragraph))
-
-def fix_paragraphs(blocks_per_page: List[List[str]]) -> List[str]:
-    output_paragraphs = []
+def fix_paragraphs(paragraph_blocks: List[DocAILayoutBlock]) -> List[str]:
+    output_paragraphs: List[str] = []
 
     last_para_ends_mid_word = False
     last_para_ends_mid_sentence = False
-    for page in blocks_per_page:
-        is_top_of_page = True
-        for paragraph in page:
-            paragraph_already_added = False
-            if not is_paragraph(paragraph):
-                continue
+    current_page = None
+    for block in paragraph_blocks:
+        if not is_paragraph_block(block):
+            continue
 
-            if is_top_of_page and output_paragraphs and MID_SENTENCE_BEGIN_REGEX.match(paragraph[0]):
-                if last_para_ends_mid_word:
-                    # add to previous paragraph without spaces
-                    output_paragraphs[-1] = output_paragraphs[-1] + paragraph
-                    paragraph_already_added = True
-                elif last_para_ends_mid_sentence:
-                    # add to previous paragraph with space between words
-                    output_paragraphs[-1] = output_paragraphs[-1] + ' ' + paragraph
-                    paragraph_already_added = True
+        paragraph_already_added = False
+        block_text = block.text_block.text.strip()
 
-            last_para_ends_mid_word = bool(MID_WORD_END_REGEX.match(paragraph[-1]))
-            last_para_ends_mid_sentence = bool(MID_SENTENCE_END_REGEX.match(paragraph[-1]))
+        at_top_of_page = block.page_span.page_start != current_page
+        starts_mid_sentence = MID_SENTENCE_BEGIN_REGEX.match(block_text)
 
-            if not paragraph_already_added:
-                output_paragraphs.append(paragraph)
+        if output_paragraphs and at_top_of_page and starts_mid_sentence:
+            if last_para_ends_mid_word:
+                # add to previous paragraph without spaces
+                output_paragraphs[-1] = output_paragraphs[-1] + block_text
+                paragraph_already_added = True
+            elif last_para_ends_mid_sentence:
+                # add to previous paragraph with space between words
+                output_paragraphs[-1] = output_paragraphs[-1] + ' ' + block_text
+                paragraph_already_added = True
+
+        last_para_ends_mid_word = bool(MID_WORD_END_REGEX.search(block_text))
+        last_para_ends_mid_sentence = bool(MID_SENTENCE_END_REGEX.search(block_text))
+        current_page = block.page_span.page_end
+
+        if not paragraph_already_added:
+            output_paragraphs.append(block_text)
 
     return output_paragraphs
 
-def extract_paragraphs(document: documentai.Document) -> List[str]:
-    """
-    Extract paragraphs from each page of the processed document.
+def extract_paragraphs_from_docai_output(document: documentai.Document) -> List[str]:
+    paragraph_blocks = paragraph_objects_from_blocks(document.document_layout.blocks)
+    return fix_paragraphs(paragraph_blocks)
 
-    Args:
-        document: The processed document from Document AI
+def extract_paragraphs(file_path, gcp_project_id, gcp_location, gcp_processor_id) -> List[str]:
+    document = send_to_layout_processor(
+        project_id=gcp_project_id,
+        location=gcp_location,
+        processor_id=gcp_processor_id,
+        file_path=file_path
+    )
+    # documentai.Document.to_json(document)
 
-    Returns:
-        A list of strings, each representing a paragraph
-    """
-    print(len(document.pages))
-    blocks_per_page = [extract_text_from_blocks(page.blocks) for page in document.pages]
-    return fix_paragraphs(blocks_per_page)
-
-def unpickle_document():
-    if os.path.exists(PICKLE_DOC_PATH):
-        with open(PICKLE_DOC_PATH, 'rb') as f:
-            return pickle.load(f)
-    else:
-        return None
-
-def main():
-    """Main function to demonstrate Document AI paragraph extraction."""
-    stored_doc = unpickle_document()
-
-    if stored_doc:
-        logger.info('Restoring saved document object')
-        document = stored_doc
-    elif os.path.exists(JSON_PATH):
-        with open(JSON_PATH, 'r') as f:
-            document = documentai.Document.from_json(f.read())
-    else:
-        # Process the document
-        document = send_to_layout_processor(
-            project_id=PROJECT_ID,
-            location=LOCATION,
-            processor_id=PROCESSOR_ID,
-            file_path=FILE_PATH
-        )
-        with open(PICKLE_DOC_PATH, 'wb') as f:
-            pickle.dump(document, f)
-        with open(JSON_PATH, 'w') as f:
-            f.write(documentai.Document.to_json(document))
-
-    paragraphs = extract_paragraphs(document)
-    # Try to identify headings (this is a heuristic approach)
-    # mark_paragraph_headings(document, paragraphs)
-
-
-    # Example: Save paragraphs to a structured format
-    # This structured format can be used for various applications
-    print("\nExample of structured paragraph data:")
-    if paragraphs:
-        import json
-        example_para = paragraphs[0]
-        print(json.dumps(example_para, indent=2))
-
-if __name__ == "__main__":
-    main()
+    return extract_paragraphs_from_docai_output(document)
