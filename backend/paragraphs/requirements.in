@@ -7,4 +7,5 @@ python-pptx
 mammoth
 striprtf
 bs4
+google-cloud-documentai
 -e ../common
