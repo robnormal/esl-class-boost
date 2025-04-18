@@ -1,15 +1,15 @@
 """
 Google Cloud Document AI Paragraph Extractor
-
-This script demonstrates how to use Google Cloud's Document AI
-to process a document and extract paragraphs rather than fixed-size chunks.
 """
-
 import re
+from os.path import isfile
 from typing import List, MutableSequence
-
 from google.cloud import documentai, documentai_v1
-from common.logger import logger
+from common.envvar import environment
+
+cred_path = environment.require('GOOGLE_APPLICATION_CREDENTIALS', 'File path to GCP credentials')
+if not isfile(cred_path):
+    raise ValueError(f"GOOGLE_APPLICATION_CREDENTIALS file path {cred_path} does not exist")
 
 MID_WORD_END_REGEX = re.compile('\\w[—\\-]$') # hyphenated
 MID_SENTENCE_END_REGEX = re.compile('[a-z]$')
