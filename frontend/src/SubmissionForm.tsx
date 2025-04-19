@@ -40,9 +40,14 @@ async function hashFile(file: File): Promise<string> {
 function SubmissionForm({ userId }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [submissionId, setSubmissionId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Reset state for new submission
+    setStatus(null);
+    setSubmissionId(null);
 
     if (!file) {
       alert('Please select a file to upload.');
@@ -111,6 +116,7 @@ function SubmissionForm({ userId }: Props) {
       }
 
       setStatus(`✅ Upload successful! Submission ID: ${submission_id}`);
+      setSubmissionId(submission_id);
     } catch (err: any) {
       setErrorStatus(setStatus, err);
     }
@@ -126,6 +132,11 @@ function SubmissionForm({ userId }: Props) {
       />
       <button type="submit" disabled={!file}>Submit</button>
       {status && <p>{status}</p>}
+      {submissionId && (
+        <p>
+          <a href={`/submission/${submissionId}`}>View your submission details</a>
+        </p>
+      )}
     </form>
   );
 }

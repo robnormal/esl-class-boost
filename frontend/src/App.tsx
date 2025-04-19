@@ -105,8 +105,7 @@ function App(): JSX.Element {
               <div className="dashboard-container">
                 <h2>Your Dashboard</h2>
                 <div className="submission-form">
-                  <SubmissionForm userId={user.username}
-                                  onSubmitted={(id) => navigate(`/submission/${id}`)}/>
+                  <SubmissionForm userId={user.username}/>
                 </div>
               </div>
               <button onClick={handleSignOut} className="sign-out-button">
