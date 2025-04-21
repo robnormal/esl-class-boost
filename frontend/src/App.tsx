@@ -5,8 +5,9 @@ import { getCurrentUser, signOut } from 'aws-amplify/auth';
 import '@aws-amplify/ui-react/styles.css';
 import './App.css';
 import SubmissionForm from './SubmissionForm';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, Link } from 'react-router-dom';
 import SubmissionDetails from './SubmissionDetails';
+import SubmissionsList from './SubmissionsList';
 
 type CurrentUser = Awaited<ReturnType<typeof getCurrentUser>>;
 
@@ -107,6 +108,9 @@ function App(): JSX.Element {
                 <div className="submission-form">
                   <SubmissionForm userId={user.username}/>
                 </div>
+                <div className="dashboard-actions">
+                  <Link to="/submissions" className="button">View My Submissions</Link>
+                </div>
               </div>
               <button onClick={handleSignOut} className="sign-out-button">
                 Sign Out
@@ -129,6 +133,9 @@ function App(): JSX.Element {
           )
         }/>
         <Route path="/submission/:submissionId" element={<SubmissionDetailsWrapper/>}/>
+        <Route path="/submissions" element={
+          user ? <SubmissionsList userId={user.username} /> : <div>Please sign in to view your submissions</div>
+        }/>
       </Routes>
     </div>
   );

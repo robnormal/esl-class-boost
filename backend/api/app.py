@@ -210,5 +210,50 @@ def get_submission_details(submission_id):
         })
     return jsonify({"submission_id": submission_id, "details": details})
 
+@app.route("/submissions", methods=["GET"])
+@conditional_cognito_auth
+def get_submissions_list():
+    """
+    Returns a list of all submissions for the current user.
+    Format expected by frontend:
+    {
+        "submissions": [
+            {
+                "id": string,
+                "filename": string,
+                "created_at": string (ISO date),
+                "status": string
+            }
+        ]
+    }
+    """
+    user_id = get_user_id()
+    logger.info(f'get_submissions_list for user {user_id}')
+
+    try:
+        # Query the submissions table for all submissions by this user
+        response = submissions_table.query(
+            KeyConditionExpression=Key('user_id').eq(user_id)
+        )
+
+        submissions = []
+        for item in response.get('Items', []):
+            # Transform DynamoDB item to the format expected by the frontend
+            submissions.append({
+                "id": item.get('submission_id'),
+                "filename": item.get('filename', 'Unnamed Document'),
+                "created_at": item.get('created_at', None),
+                "status": item.get('status', '')
+            })
+
+        # Sort submissions by created_at (newest first)
+        submissions.sort(key=lambda x: x['created_at'], reverse=True)
+
+        return jsonify({"submissions": submissions})
+
+    except Exception as e:
+        logger.error(f"Error fetching submissions: {e}", exc_info=True)
+        return jsonify({"error": f"Failed to fetch submissions: {str(e)}"}), 500
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
