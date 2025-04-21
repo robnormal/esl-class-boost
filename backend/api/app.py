@@ -19,6 +19,7 @@ from common.envvar import environment
 from common.logger import logger
 from common.summary_repo import SummaryRepo
 from common.vocabulary_word_repo import VocabularyWordRepo, VocabularyWord
+from common.submission_repo import submission_repo, NewSubmission, SubmissionState
 
 # Flask app setup
 app = Flask(__name__)
@@ -126,8 +127,20 @@ def generate_upload_url():
             Params={'Bucket': SUBMISSIONS_BUCKET, 'Key': s3_key, 'ContentType': 'text/plain'},
             ExpiresIn=300
         )
+
+        # Save submission record to DynamoDB
+        new_submission = NewSubmission(
+            user_id=user_id,
+            submission_id=file_hash,
+            state=SubmissionState.PENDING,
+            filename=file_name
+        )
+        submission_repo.create(new_submission)
+        logger.info(f"Created submission record for {file_hash}")
+
     except Exception as e:
-        return jsonify({'error': f"Failed to generate presigned URL: {str(e)}"}), 500
+        logger.error(f"Error in generate_upload_url: {e}", exc_info=True)
+        return jsonify({'error': f"Failed to process request: {str(e)}"}), 500
 
     return jsonify({
         'submission_id': file_hash,

@@ -66,14 +66,6 @@ class SummaryRepo:
         self.table.put_item(Item=item)
         return item
 
-    def save_many(self, new_summaries: list[NewSummary]):
-        items = []
-        with self.table.batch_writer() as batch:
-            for new_summary in new_summaries:
-                item = self.item_from_new_record_for_insert(new_summary)
-                batch.put_item(Item=item)
-                items.append(item)
-
     def get_by_submission(self, user_id, submission_id) -> List[Summary]:
         response = self.table.query(
             KeyConditionExpression=Key('user_id').eq(user_id) &
