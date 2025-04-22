@@ -19,7 +19,7 @@ from common.logger import logger
 from common.upload_notification import poll_sqs_for_s3_file_forever, S3Upload
 from common.sqs_client import sqs_client
 from common.summary_repo import NewSummary, summary_repo
-from paragraph_summarizer import summarize_paragraph
+from paragraph_summarizer import summarize_paragraphs
 
 # Configuration
 PARAGRAPHS_BUCKET = environment.require('PARAGRAPHS_BUCKET')
@@ -42,27 +42,22 @@ def process_record(s3_upload: S3Upload):
     summaries_count = 0
 
     logger.info(f"Received {len(paragraphs)} paragraphs for submission {submission_id}")
-    for i, paragraph in enumerate(paragraphs):
-        if paragraph_should_be_summarized(paragraph):
-            summary_text = summarize_paragraph(paragraph)
-            if not summary_text:
-                logger.error(f"No summary found for submission {submission_id}, paragraph {i}")
-                continue
+    summaries = summarize_paragraphs(paragraphs)
+    for i, summary_text in enumerate(summaries):
+        # Save each summary immediately instead of batching
+        new_summary = NewSummary(
+            user_id=user_id,
+            submission_id=submission_id,
+            paragraph_number=i,
+            paragraph_start=' '.join(paragraphs[i].split()[:PARAGRAPH_INTRO_WORDS]),
+            summary=summary_text,
+        )
+        summary_repo.create(new_summary)
+        summaries_count += 1
 
-            # Save each summary immediately instead of batching
-            new_summary = NewSummary(
-                user_id=user_id,
-                submission_id=submission_id,
-                paragraph_number=i,
-                paragraph_start=' '.join(paragraph.split()[:PARAGRAPH_INTRO_WORDS]),
-                summary=summary_text,
-            )
-            summary_repo.create(new_summary)
-            summaries_count += 1
-
-            if summaries_count > SUMMARIES_PER_SUBMISSION_LIMIT:
-                logger.error(f"Limiting submission {s3_upload.file_hash} to {SUMMARIES_PER_SUBMISSION_LIMIT} summaries")
-                break
+        if summaries_count > SUMMARIES_PER_SUBMISSION_LIMIT:
+            logger.error(f"Limiting submission {s3_upload.file_hash} to {SUMMARIES_PER_SUBMISSION_LIMIT} summaries")
+            break
 
     logger.info(f"Successfully saved {summaries_count} paragraph summaries for submission {submission_id}")
 
