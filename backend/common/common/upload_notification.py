@@ -18,7 +18,9 @@ def submission_id_from_s3_key(key):
     """Extract user ID from S3 key format: uploads/{user_id}/{file_hash}.txt"""
     parts = key.split('/')
     if len(parts) >= 3 and parts[0] == 'uploads':
-        return parts[1], parts[2]
+        user_id = parts[1]
+        submission_id = os.path.splitext(parts[2])[0]
+        return user_id, submission_id
     else:
         raise ValueError(f"Invalid S3 key format: {key}")
 

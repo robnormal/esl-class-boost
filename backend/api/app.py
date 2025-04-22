@@ -103,6 +103,21 @@ def submitted_file_content(req) -> tuple[bytes, None]|tuple[None, tuple[Response
     else:
         return content_bytes, None
 
+def get_submission_state_name(submission_item) -> str:
+    try:
+        state = SubmissionState(submission_item.get('state'))
+        if state == SubmissionState.PENDING:
+            return 'pending'
+        elif state == SubmissionState.PROCESSING:
+            return 'processing'
+        elif state == SubmissionState.PARAGRAPHED:
+            return 'paragraphed'
+        else:
+            return 'Invalid state'
+
+    except Exception as e:
+        return 'Invalid state'
+
 @app.route("/generate-upload-url", methods=["POST"])
 @conditional_cognito_auth
 def generate_upload_url():
@@ -191,7 +206,7 @@ def get_submission_details(submission_id):
     user_id = get_user_id()
 
     # FIXME: We are using this as the submission_id in vocabulary and summaries
-    paragraphs_filename = f"{submission_id}_paragraphs.json"
+    paragraphs_filename = f"{submission_id}.json"
 
     # Fetch vocabulary from DynamoDB
     try:
@@ -256,11 +271,11 @@ def get_submissions_list():
                 "id": item.get('submission_id'),
                 "filename": item.get('filename', 'Unnamed Document'),
                 "created_at": item.get('created_at', None),
-                "status": item.get('status', '')
+                "status": get_submission_state_name(item),
             })
 
         # Sort submissions by created_at (newest first)
-        submissions.sort(key=lambda x: x['created_at'], reverse=True)
+        submissions.sort(key=lambda x: x.get('created_at') or 0, reverse=True)
 
         return jsonify({"submissions": submissions})
 
