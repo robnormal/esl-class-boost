@@ -205,18 +205,15 @@ def get_submission_details(submission_id):
     """Returns the first 10 words, vocabulary, and summary for each paragraph of a submission."""
     user_id = get_user_id()
 
-    # FIXME: We are using this as the submission_id in vocabulary and summaries
-    paragraphs_filename = f"{submission_id}.json"
-
     # Fetch vocabulary from DynamoDB
     try:
-        vocab_data = VocabularyWordRepo(vocab_table).get_by_submission(user_id, paragraphs_filename)
+        vocab_data = VocabularyWordRepo(vocab_table).get_by_submission(user_id, submission_id)
     except Exception as e:
         logger.error(e, exc_info=True)
         return jsonify({"submission_id": submission_id, "error": f"DynamoDB error: {str(e)}"}), 500
 
     try:
-        summaries = SummaryRepo(summary_table).get_by_submission(user_id, paragraphs_filename)
+        summaries = SummaryRepo(summary_table).get_by_submission(user_id, submission_id)
     except Exception as e:
         logger.error(e, exc_info=True)
         return jsonify({"submission_id": submission_id, "error": f"DynamoDB error: {str(e)}"}), 500
