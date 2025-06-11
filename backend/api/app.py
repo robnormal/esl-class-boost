@@ -4,14 +4,15 @@ from typing import List, Dict
 import boto3
 import requests
 from boto3.dynamodb.conditions import Key
-from requests import Response
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from flask_cognito import CognitoAuth, cognito_auth_required, current_cognito_jwt
 from functools import wraps
+import json
 
 # Load environment variables
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from common.constants import SUBMISSIONS_TABLE, VOCABULARY_TABLE, SUMMARIES_TABLE
@@ -19,7 +20,7 @@ from common.envvar import environment
 from common.logger import logger
 from common.summary_repo import SummaryRepo
 from common.vocabulary_word_repo import VocabularyWordRepo, VocabularyWord
-from common.submission_repo import submission_repo, NewSubmission, SubmissionState
+from common.submission_repo import submission_repo, NewSubmission, SubmissionState, SubmissionRepo
 
 # Flask app setup
 app = Flask(__name__)
@@ -35,6 +36,7 @@ cognito = CognitoAuth(app)
 IS_LOCAL = environment.require('IS_LOCAL')
 AWS_REGION = environment.require('AWS_REGION')
 SUBMISSIONS_BUCKET = environment.require('SUBMISSIONS_BUCKET')
+PARAGRAPHS_BUCKET = environment.require('PARAGRAPHS_BUCKET')
 CORS_ORIGINS = environment.require('CORS_ORIGINS').split(',')
 
 CORS(app, origins=CORS_ORIGINS,
@@ -115,7 +117,7 @@ def get_submission_state_name(submission_item) -> str:
         else:
             return 'Invalid state'
 
-    except Exception as e:
+    except Exception as _e:
         return 'Invalid state'
 
 @app.route("/generate-upload-url", methods=["POST"])
@@ -205,6 +207,10 @@ def get_submission_details(submission_id):
     """Returns the first 10 words, vocabulary, and summary for each paragraph of a submission."""
     user_id = get_user_id()
 
+    submission = SubmissionRepo(submissions_table).get_by_id(user_id, submission_id)
+    if submission.state != SubmissionState.PARAGRAPHED:
+        return jsonify({"submission_id": submission_id, "error": f"Submission not ready yet. Try again later."}), 503
+
     # Fetch vocabulary from DynamoDB
     try:
         vocab_data = VocabularyWordRepo(vocab_table).get_by_submission(user_id, submission_id)
@@ -234,6 +240,36 @@ def get_submission_details(submission_id):
             "paragraph_start": summaries_by_paragraph[i].paragraph_start if i in summaries_by_paragraph else "",
         })
     return jsonify({"submission_id": submission_id, "details": details})
+
+@app.route("/files/<submission_id>/text", methods=["GET"])
+@conditional_cognito_auth
+def get_submission_text(submission_id):
+    """Returns the plain text of the submission by concatenating all paragraphs."""
+    logger.info(f'get_submission_text {submission_id}')
+    user_id = get_user_id()
+
+    # Verify submission exists and belongs to user
+    submission = SubmissionRepo(submissions_table).get_by_id(user_id, submission_id)
+    if not submission:
+        return jsonify({"error": "Submission not found"}), 404
+
+    try:
+        print(f"Fetching {submission.s3_base_path()}.json from {PARAGRAPHS_BUCKET}")
+        # Get the JSON file from S3
+        response = s3_client.get_object(
+            Bucket=PARAGRAPHS_BUCKET,
+            Key=f"{submission.s3_base_path()}.json"
+        )
+        paragraphs = json.loads(response['Body'].read().decode('utf-8'))
+
+        # Concatenate paragraphs with double newlines
+        text = "\n\n".join(paragraphs)
+        return Response(text, mimetype='text/plain')
+
+    except Exception as e:
+        logger.error(f"Error retrieving submission text: {e}", exc_info=True)
+        return jsonify({"error": f"Failed to retrieve submission text: {str(e)}"}), 500
+
 
 @app.route("/submissions", methods=["GET"])
 @conditional_cognito_auth

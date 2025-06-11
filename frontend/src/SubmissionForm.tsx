@@ -134,7 +134,7 @@ function SubmissionForm({ userId }: Props) {
       {status && <p>{status}</p>}
       {submissionId && (
         <p>
-          <a href={`/submission/${submissionId}`}>View your submission details</a>
+          <a href={`/submissions`}>View the status of your submission.</a>
         </p>
       )}
     </form>

@@ -12,6 +12,8 @@ interface SubmissionDetailsProps {
   submissionId: string;
 }
 
+const BACKEND = 'http://localhost:5000'
+
 const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) => {
   const [details, setDetails] = useState<ParagraphDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -20,7 +22,7 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/files/${submissionId}/details`);
+        const response = await fetch(`${BACKEND}/files/${submissionId}/details`);
         if (!response.ok) {
           throw new Error('Failed to fetch submission details');
         }
@@ -51,6 +53,11 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
   return (
     <div>
       <h1 className="document-title">Study Guide</h1>
+      <div className="download-section">
+        <a href={`${BACKEND}/files/${submissionId}/text`} className="download-link">
+          Download Plain Text
+        </a>
+      </div>
       {details.map((detail, index) => (
         <div key={index} className="paragraph-study-guide">
           <h3 className="paragraph-start">{detail.paragraph_start}...</h3>

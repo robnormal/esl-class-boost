@@ -23,6 +23,9 @@ class BaseSubmission:
     filename: Optional[str] = None
     paragraph_count: Optional[int] = None
 
+    def s3_base_path(self) -> str:
+        return f"uploads/{self.user_id}/{self.submission_id}"
+
 @dataclass
 class NewSubmission(BaseSubmission):
     pass
@@ -172,6 +175,7 @@ class SubmissionRepo:
                 'submission_id': submission_id
             }
         )
+
 # Initialize the repo with the DynamoDB table
 dynamodb = boto3.resource('dynamodb')
 submissions_table = dynamodb.Table(SUBMISSIONS_TABLE)
