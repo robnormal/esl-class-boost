@@ -1,4 +1,3 @@
-import json
 import sys
 import os
 import tempfile
@@ -8,7 +7,7 @@ from typing import Iterator
 import boto3
 
 from common.logger import logger
-from common.sqs_client import QueueClient
+from common.sqs_client import QueueClient, records_from_sqs_message
 
 sqs = boto3.client('sqs')
 s3 = boto3.client('s3')
@@ -55,9 +54,7 @@ def poll_sqs_for_s3_file(queue_client: QueueClient) -> Iterator[S3Upload]:
         receipt_handle = msg['ReceiptHandle']
 
         try:
-            message = json.loads(msg['Body'])
-
-            for record in message.get('Records', []):
+            for record in records_from_sqs_message(msg):
                 if record.get('eventName') != 'ObjectCreated:Put':
                     continue
 

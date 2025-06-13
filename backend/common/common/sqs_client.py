@@ -1,6 +1,7 @@
 import boto3
 import logging
-from typing import Optional, Dict, Any, List
+import json
+from typing import Optional, Dict, Any, List, Generator
 from common.envvar import environment
 
 logger = logging.getLogger(__name__)
@@ -76,5 +77,33 @@ class QueueClient:
             ReceiptHandle=receipt_handle,
             VisibilityTimeout=visibility_timeout
         )
+
+def records_from_sqs_message(sqs_message: Dict[str, Any]) -> Generator[Dict[str, Any], None, None]:
+    """
+    Extract records from an SQS message, handling both direct SQS messages and SNS notifications.
+
+    Args:
+        sqs_message: The message received from SQS
+
+    Returns:
+        Generator of records from the message
+
+    Raises:
+        KeyError: If the SQS message is missing required fields
+        json.JSONDecodeError: If the message body cannot be parsed as JSON
+        ValueError: If the message format is invalid
+    """
+    message = json.loads(sqs_message['Body'])
+
+    if 'TopicArn' in message and message.get('Type') == 'Notification':
+        try:
+            message = json.loads(message['Message'])
+        except json.JSONDecodeError:
+            logger.error(f"Expected message from SNS topic, got `{message}`")
+            return
+
+    for record in message.get('Records', []):
+        yield record
+
 
 sqs_client = SQSClient()

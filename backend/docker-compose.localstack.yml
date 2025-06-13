@@ -4,7 +4,7 @@ services:
     ports:
       - "4566:4566"
     environment:
-      - SERVICES=s3,sqs,dynamodb
+      - SERVICES=s3,sqs,dynamodb,sns
       - PERSISTENCE=1
       - S3_PROVIDER=custom
     volumes:
