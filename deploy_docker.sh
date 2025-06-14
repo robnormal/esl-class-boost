@@ -33,32 +33,26 @@ fi
 echo "🔑 Logging into ECR..."
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
 
+cd backend
+
 # Process each service
 for service in "${services[@]}"; do
     echo "🚀 Processing $service service..."
-    SERVICE_DIR="backend/$service"
-    
-    # Validate service directory
-    if [[ ! -d "$SERVICE_DIR" ]]; then
-        echo "❌ Error: Service directory '$SERVICE_DIR' does not exist."
-        continue
-    fi
-    
+
     # Build Docker image
     echo "🏗️  Building Docker image for $service..."
-    cd "$SERVICE_DIR"
-    docker build -t "$service-service" .
-    
+    docker build -f "Dockerfile.$service" -t "$service-service" .
+
     # Tag image for ECR
     echo "🏷️  Tagging image for ECR..."
     docker tag "$service-service:latest" "$ECR_REGISTRY/$service-service:latest"
-    
+
     # Push to ECR
     echo "⬆️  Pushing image to ECR..."
     docker push "$ECR_REGISTRY/$service-service:latest"
-    
+
     cd ../..
     echo "✅ Completed processing $service service"
 done
 
-echo "🎉 All services have been successfully built and pushed to ECR" 
+echo "🎉 All services have been successfully built and pushed to ECR"

@@ -4,7 +4,7 @@
 # Stop on error
 set -e
 
-cd "$(dirname "${BASH_SOURCE[0]}")"/terraform
+cd "$(dirname "${BASH_SOURCE[0]}")"/infra
 CLOUDFRONT_DIST_ID=$(terraform output -raw cloudfront_distribution_id)
 
 cd ../frontend

@@ -4,7 +4,7 @@
 #
 #    pip-compile
 #
--e file:///home/rob/Code/english-vocabulary-tool/backend/common
+-e file:../common
     # via -r requirements.in
 click==8.1.8
     # via nltk

@@ -3,7 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Add build argument for requirements file
-ARG SERVICE_DIR=./api
+ARG SERVICE_DIR=./summaries
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -23,9 +23,6 @@ COPY ./common ./common
 COPY ${SERVICE_DIR}/requirements.txt ${SERVICE_DIR}/requirements.txt
 RUN cd ${SERVICE_DIR} && pip install -r requirements.txt
 
-# Expose the port the app runs on
-EXPOSE 8000
-
 # Run the service
 WORKDIR /app/${SERVICE_DIR}
-CMD ["python", "app.py"]
+CMD ["python", "paragraph_summarizer.py"]
