@@ -12,7 +12,7 @@ interface SubmissionDetailsProps {
   submissionId: string;
 }
 
-const BACKEND = 'http://localhost:5000'
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) => {
   const [details, setDetails] = useState<ParagraphDetails[]>([]);
@@ -22,7 +22,7 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        const response = await fetch(`${BACKEND}/files/${submissionId}/details`);
+        const response = await fetch(`${BACKEND_URL}/files/${submissionId}/details`);
         if (!response.ok) {
           throw new Error('Failed to fetch submission details');
         }
@@ -54,7 +54,7 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
     <div>
       <h1 className="document-title">Study Guide</h1>
       <div className="download-section">
-        <a href={`${BACKEND}/files/${submissionId}/text`} className="download-link">
+        <a href={`${BACKEND_URL}/files/${submissionId}/text`} className="download-link">
           Download Plain Text
         </a>
       </div>
