@@ -20,6 +20,6 @@ output "cognito_user_pool_client_id" {
 
 # Update outputs to include the domain
 output "cognito_domain" {
-  value       = "https://${aws_cognito_user_pool_domain.main.domain}.auth.${data.aws_region.current.name}.amazoncognito.com"
+  value       = aws_cognito_user_pool_domain.main.domain
   description = "The domain URL for the Cognito hosted UI"
 }
