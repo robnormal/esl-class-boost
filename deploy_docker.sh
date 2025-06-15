@@ -47,10 +47,7 @@ cd backend
 # Process each service
 for service in "${services[@]}"; do
     echo "🚀 Processing $service service..."
-    REGISTRY_TAG="rhr-learning-tool-$service-service"
-
-    # Create ECR repository if it doesn't exist
-    create_ecr_repository "$REGISTRY_TAG"
+    REGISTRY_TAG="learning-tool-$service"
 
     # Build Docker image
     echo "🏗️  Building Docker image for $service..."

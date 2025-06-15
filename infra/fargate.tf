@@ -81,14 +81,6 @@ resource "aws_iam_role" "ecs_task_execution" {
         Action    = "sts:AssumeRole",
         Effect    = "Allow",
         Principal = { Service = "ecs-tasks.amazonaws.com" }
-      },
-      {
-        Action = [
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ],
-        Effect = "Allow",
-        Resource = "arn:aws:logs:*:*:log-group:/ecs/learning-tool:*"
       }
     ]
   })
@@ -97,6 +89,38 @@ resource "aws_iam_role" "ecs_task_execution" {
 resource "aws_iam_role_policy_attachment" "ecs_execution_attach" {
   role       = aws_iam_role.ecs_task_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# Inline policy for CloudWatch Logs permissions
+resource "aws_iam_role_policy" "ecs_logs_policy" {
+  name = "ecs-logs-policy"
+  role = aws_iam_role.ecs_task_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Effect = "Allow"
+        Resource = "arn:aws:logs:*:*:log-group:/ecs/learning-tool:*"
+      },
+      {
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ]
+        Effect = "Allow"
+        Resource = [
+          for repo in aws_ecr_repository.repos : repo.arn
+        ]
+      }
+    ]
+  })
 }
 
 # ECS Tasks - one for each microservice
@@ -200,7 +224,7 @@ resource "aws_ecs_service" "api_ecs_service" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.api_alb_group.arn
-    container_name   = "api-container"
+    container_name   = "api-task"
     container_port   = 80
   }
 
