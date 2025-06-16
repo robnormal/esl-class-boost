@@ -39,21 +39,10 @@ start_service() {
         echo "📂 Working directory: $(pwd)"
         echo "🐍 Python version: $(python --version)"
 
+
         # Start the service (adjust the command based on how each service should be started)
-        case $service_name in
-            "api")
-                python service/app.py
-                ;;
-            "paragraphs")
-                python main.py
-                ;;
-            "vocabulary")
-                python main.py
-                ;;
-            "summaries")
-                python main.py
-                ;;
-        esac
+        # All services currently call their entrypoint the same way:
+        python service/main.py
     )
 }
 
