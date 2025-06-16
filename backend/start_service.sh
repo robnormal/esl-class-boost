@@ -42,7 +42,7 @@ start_service() {
         # Start the service (adjust the command based on how each service should be started)
         case $service_name in
             "api")
-                python app.py
+                python service/app.py
                 ;;
             "paragraphs")
                 python main.py

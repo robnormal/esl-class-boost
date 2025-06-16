@@ -1,4 +1,6 @@
 requests
+boto3
+bs4
 flask
 flask_cors
 flask-cognito
