@@ -28,4 +28,4 @@ EXPOSE 8000
 
 # Run the service
 WORKDIR /app/${SERVICE_DIR}
-CMD ["python", "service/app.py"]
+CMD ["python", "app.py"]

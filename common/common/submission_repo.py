@@ -5,7 +5,6 @@ import boto3
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from boto3.dynamodb.conditions import Key
-from mypy_boto3_dynamodb.service_resource import Table
 
 from common.constants import SUBMISSIONS_TABLE
 from common.logger import logger
@@ -35,7 +34,7 @@ class Submission(BaseSubmission):
     created_at: int = int(time.time())
 
 class SubmissionRepo:
-    def __init__(self, table: Table):
+    def __init__(self, table):
         self.table = table
 
     def record_from_item(self, item: Dict[str, Any]) -> Submission|None:

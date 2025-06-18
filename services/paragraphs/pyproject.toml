@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "paragraphs"
+version = "0.1.0"
+description = "Paragraphs service for English vocabulary tool"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "python-dotenv",
+    "requests",
+    "pdfplumber",
+    "python-docx",
+    "openpyxl",
+    "python-pptx",
+    "mammoth",
+    "striprtf",
+    "beautifulsoup4",
+    "google-cloud-documentai",
+    "common @ {root:parent:parent:uri}/common",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]

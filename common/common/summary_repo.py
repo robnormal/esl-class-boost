@@ -3,7 +3,6 @@ import boto3
 from typing import List, Dict, Any
 from dataclasses import dataclass
 from boto3.dynamodb.conditions import Key
-from mypy_boto3_dynamodb.service_resource import Table
 
 from common.constants import SUMMARIES_TABLE
 from common.logger import logger
@@ -25,7 +24,7 @@ class Summary(BaseSummary):
     created_at: int = int(time.time())
 
 class SummaryRepo:
-    def __init__(self, table: Table):
+    def __init__(self, table):
         self.table = table
 
     def record_from_item(self, item: Dict[str, Any]):
