@@ -11,7 +11,7 @@ AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
 
 # Array of services
-services=("api" "paragraphs" "summaries" "vocabulary")
+SERVICES=("api" "paragraphs" "summaries" "vocabulary")
 
 # Function to check if a command exists
 command_exists() {
@@ -42,10 +42,10 @@ fi
 echo "🔑 Logging into ECR..."
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-cd backend
+cd services
 
 # Process each service
-for service in "${services[@]}"; do
+for service in "${SERVICES[@]}"; do
     echo "🚀 Processing $service service..."
     REGISTRY_TAG="learning-tool-$service"
 

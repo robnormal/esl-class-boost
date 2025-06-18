@@ -207,5 +207,5 @@ yarn-error.log*
 .venv.*
 
 # localstack storage
-backend/localstack-data
+services/localstack-data
 infra/gcp/key.json
