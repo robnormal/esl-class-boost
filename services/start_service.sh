@@ -23,26 +23,17 @@ start_service() {
 
     cd "$service_dir"
 
-    # Virtual environment is any directory starting with ".venv"
-    venv_dir=$(find . -maxdepth 1 -name ".venv*" -print -quit)
-
     echo "🚀 Starting $service_name service..."
-
-    if [[ ! -d "$venv_dir" ]]; then
-        echo "❌ Virtual environment not found for $service_name. Please run create-virtual-environments.sh first."
-        exit 1
-    fi
 
     # Activate virtual environment and start the service
     (
-        source "$venv_dir/bin/activate"
         echo "📂 Working directory: $(pwd)"
         echo "🐍 Python version: $(python --version)"
 
 
         # Start the service (adjust the command based on how each service should be started)
         # All services currently call their entrypoint the same way:
-        python service/main.py
+        hatch run python src/main.py
     )
 }
 
