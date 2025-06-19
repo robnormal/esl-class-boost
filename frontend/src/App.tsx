@@ -2,7 +2,7 @@ import React, { useState, useEffect, JSX } from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
 import { Amplify } from 'aws-amplify';
 import { getCurrentUser, signOut } from 'aws-amplify/auth';
-import '@aws-amplify/ui-react/styles.css';
+// import '@aws-amplify/ui-react/styles.css';
 import './App.css';
 import SubmissionForm from './SubmissionForm';
 import { Routes, Route, useNavigate, Link } from 'react-router-dom';
