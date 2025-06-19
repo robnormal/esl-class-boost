@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchAuthSession } from '@aws-amplify/auth';
+import { getSessionToken, BACKEND_URL } from './utils/auth';
 
 interface Submission {
   id: string;
@@ -13,21 +13,15 @@ interface SubmissionsListProps {
   userId: string;
 }
 
-// Use environment variables for configuration
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-const IS_DEV = import.meta.env.DEV;
+type SetError = React.Dispatch<React.SetStateAction<string | null>>
 
-async function getSessionToken(): Promise<string|undefined> {
-  if (IS_DEV) {
-    return 'dev-token';
+function setAndShowError(err: unknown, setError: SetError) {
+  if (err instanceof Error) {
+    setError(err.message);
+  } else {
+    setError(`Unknown error: ${err}`);
   }
-  try {
-    const session = await fetchAuthSession();
-    return session.tokens?.idToken?.toString();
-  } catch (error) {
-    console.error("Error getting auth session:", error);
-    return undefined;
-  }
+  console.error(err);
 }
 
 const SubmissionsList: React.FC<SubmissionsListProps> = ({ userId }) => {
@@ -42,32 +36,25 @@ const SubmissionsList: React.FC<SubmissionsListProps> = ({ userId }) => {
 
         const authToken = await getSessionToken();
         if (!authToken) {
-          throw new Error('Not logged in or unable to retrieve authentication token');
-        }
-
-        if (!BACKEND_URL) {
-          throw new Error('Backend URL is not defined');
-        }
-
-        const response = await fetch(`${BACKEND_URL}/submissions`, {
-          headers: {
-            "Authorization": `Bearer ${authToken}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch submissions: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        setSubmissions(data.submissions);
-      } catch (err) {
-        if (err instanceof Error) {
-          setError(err.message);
+          setAndShowError('Not logged in or unable to retrieve authentication token', setError);
+        } else if (!BACKEND_URL) {
+          setAndShowError('Backend URL is not defined', setError);
         } else {
-          setError(`Unknown error: ${err}`);
+          const response = await fetch(`${BACKEND_URL}/submissions`, {
+            headers: {
+              "Authorization": `Bearer ${authToken}`,
+            },
+          });
+
+          if (!response.ok) {
+            setAndShowError(`Failed to fetch submissions: ${response.status} ${response.statusText}`, setError);
+          } else {
+            const data = await response.json();
+            setSubmissions(data.submissions);
+          }
         }
-        console.error(err);
+      } catch (err) {
+        setAndShowError(err, setError)
       } finally {
         setLoading(false);
       }
