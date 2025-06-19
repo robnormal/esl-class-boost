@@ -44,11 +44,12 @@ def upload_paragraphs(bucket, key, paragraphs):
     )
 
 def process_record(s3_upload: S3Upload):
+    logger.info(f"Processing file {s3_upload.user_id}/{s3_upload.file_hash}")
     # File hash functions as the submission_id
     submission_repo.update_state(
         s3_upload.user_id,
         s3_upload.file_hash,
-        SubmissionState.PROCESSING.value
+        SubmissionState.RECEIVED.value
     )
     paragraphs = extract_paragraphs(s3_upload.tmp_file_path)
 
@@ -61,7 +62,6 @@ def process_record(s3_upload: S3Upload):
         len(paragraphs)
     )
 
-    # Update state to READY after paragraphs have been processed
     submission_repo.update_state(
         s3_upload.user_id,
         s3_upload.file_hash,

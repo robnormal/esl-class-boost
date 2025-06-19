@@ -19,6 +19,7 @@ from common.logger import logger
 from common.upload_notification import poll_sqs_for_s3_file_forever, S3Upload
 from common.sqs_client import sqs_client
 from common.summary_repo import NewSummary, summary_repo
+from common.submission_repo import submission_repo, SubmissionState
 from paragraph_summarizer import summarize_paragraphs
 
 # Configuration
@@ -58,6 +59,12 @@ def process_record(s3_upload: S3Upload):
         if summaries_count > SUMMARIES_PER_SUBMISSION_LIMIT:
             logger.error(f"Limiting submission {s3_upload.file_hash} to {SUMMARIES_PER_SUBMISSION_LIMIT} summaries")
             break
+
+    submission_repo.update_state(
+        s3_upload.user_id,
+        s3_upload.file_hash,
+        SubmissionState.SUMMARIZED.value
+    )
 
     logger.info(f"Successfully saved {summaries_count} paragraph summaries for submission {submission_id}")
 

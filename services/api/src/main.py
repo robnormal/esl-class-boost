@@ -13,6 +13,7 @@ import json
 # Load environment variables
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 from common.constants import SUBMISSIONS_TABLE, VOCABULARY_TABLE, SUMMARIES_TABLE
@@ -20,7 +21,7 @@ from common.envvar import environment
 from common.logger import logger
 from common.summary_repo import SummaryRepo
 from common.vocabulary_word_repo import VocabularyWordRepo, VocabularyWord
-from common.submission_repo import submission_repo, NewSubmission, SubmissionState, SubmissionRepo
+from common.submission_repo import submission_repo, NewSubmission, SubmissionState, SubmissionRepo, SUBMISSION_COMPLETED
 
 # Flask app setup
 app = Flask(__name__)
@@ -108,12 +109,12 @@ def submitted_file_content(req) -> tuple[bytes, None]|tuple[None, tuple[Response
 def get_submission_state_name(submission_item) -> str:
     try:
         state = SubmissionState(submission_item.get('state'))
-        if state == SubmissionState.PENDING:
-            return 'pending'
-        elif state == SubmissionState.PROCESSING:
+        if state == SubmissionState.RECEIVED:
+            return 'received'
+        elif state < SUBMISSION_COMPLETED:
             return 'processing'
-        elif state == SubmissionState.PARAGRAPHED:
-            return 'paragraphed'
+        elif state == SUBMISSION_COMPLETED:
+            return 'complete'
         else:
             return 'Invalid state'
 
@@ -149,7 +150,7 @@ def generate_upload_url():
         new_submission = NewSubmission(
             user_id=user_id,
             submission_id=file_hash,
-            state=SubmissionState.PENDING,
+            state=SubmissionState.RECEIVED,
             filename=file_name
         )
         submission_repo.create(new_submission)

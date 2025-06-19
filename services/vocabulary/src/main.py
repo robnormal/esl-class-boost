@@ -19,6 +19,7 @@ from common.logger import logger
 from common.upload_notification import poll_sqs_for_s3_file_forever, S3Upload
 from common.sqs_client import sqs_client
 from common.vocabulary_word_repo import NewVocabularyWord, vocabulary_word_repo
+from common.submission_repo import submission_repo, SubmissionState
 from nlp_word_extraction import parse_paragraphs
 
 # Configuration
@@ -51,6 +52,13 @@ def process_record(s3_upload: S3Upload):
         new_vocabulary_words.append(record)
 
     vocabulary_word_repo.create_many(new_vocabulary_words)
+
+    submission_repo.update_state(
+        s3_upload.user_id,
+        s3_upload.file_hash,
+        SubmissionState.VOCABULARIZED.value
+    )
+
     logger.info(f"Successfully saved {len(words)} vocabulary words for submission {submission_id}")
 
 

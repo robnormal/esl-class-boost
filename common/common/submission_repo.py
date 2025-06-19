@@ -5,14 +5,21 @@ import boto3
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from boto3.dynamodb.conditions import Key
+from common.submission_repo import SubmissionState
 
 from common.constants import SUBMISSIONS_TABLE
 from common.logger import logger
 
 class SubmissionState(Enum):
-    PENDING = 0
-    PROCESSING = 1
-    PARAGRAPHED = 2
+    RECEIVED = 0
+    PARAGRAPHED = 1
+    VOCABULARIZED = 2
+    SUMMARIZED = 4
+
+SUBMISSION_COMPLETED = (SubmissionState.RECEIVED
+                        | SubmissionState.PARAGRAPHED
+                        | SubmissionState.VOCABULARIZED
+                        | SubmissionState.SUMMARIZED)
 
 @dataclass
 class BaseSubmission:
@@ -135,19 +142,19 @@ class SubmissionRepo:
         return submissions
 
     def update_state(self, user_id: str, submission_id: str, new_state: str) -> None:
-        """Update the state of an existing submission."""
-        logger.info(f"Updating submission {submission_id} state to {new_state}")
+        """Update the state of an existing submission by adding new_state to current state."""
+        logger.info(f"Adding state {new_state} to submission {submission_id}")
         self.table.update_item(
             Key={
                 'user_id': user_id,
                 'submission_id': submission_id
             },
-            UpdateExpression="SET #state = :new_state",
+            UpdateExpression="ADD #state :new_state",
             ExpressionAttributeNames={
                 '#state': 'state'
             },
             ExpressionAttributeValues={
-                ':new_state': new_state
+                ':new_state': int(new_state)
             }
         )
 
