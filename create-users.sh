@@ -8,7 +8,32 @@ if [ -z "$COGNITO_USER_POOL_ID" ]; then
   exit 1
 fi
 
-aws cognito-idp admin-create-user \
+function random_string {
+  tr -dc "A-Za-z\!-@" </dev/urandom | head -c "$1"
+}
+
+#aws cognito-idp admin-create-user \
+#  --user-pool-id "$COGNITO_USER_POOL_ID" \
+#  --username "$1" \
+#  --message-action SUPPRESS
+#
+#aws cognito-idp admin-update-user-attributes \
+#  --user-pool-id "$COGNITO_USER_POOL_ID" \
+#  --username "$1" \
+#  --user-attributes Name=email,Value="$1@example.com"
+#
+#aws cognito-idp admin-update-user-attributes \
+#  --user-pool-id "$COGNITO_USER_POOL_ID" \
+#  --username "$1" \
+#  --user-attributes Name=email_verified,Value=true
+
+PASSWORD=$(random_string 16)
+
+aws cognito-idp admin-set-user-password \
   --user-pool-id "$COGNITO_USER_POOL_ID" \
   --username "$1" \
-  --message-action SUPPRESS
+  --password "$PASSWORD" \
+  --permanent
+
+echo "Finished! User's password is:"
+echo $PASSWORD
