@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "english-vocabulary-tool"
+version = "0.1.0"
+description = "English vocabulary learning tool with microservices architecture"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+packages = []
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0"
+black = "^23.0"
+flake8 = "^6.0"
+mypy = "^1.0" 
