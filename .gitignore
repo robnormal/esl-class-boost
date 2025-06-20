@@ -209,3 +209,6 @@ yarn-error.log*
 # localstack storage
 services/localstack-data
 infra/gcp/key.json
+
+# Allegedly, we should commit these, but that can cause its own headaches
+poetry.lock

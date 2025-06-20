@@ -33,7 +33,7 @@ start_service() {
 
         # Start the service (adjust the command based on how each service should be started)
         # All services currently call their entrypoint the same way:
-        hatch run python src/main.py
+        poetry run python src/main.py
     )
 }
 

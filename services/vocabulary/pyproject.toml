@@ -1,22 +1,17 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[project]
+[tool.poetry]
 name = "vocabulary"
 version = "0.1.0"
 description = "Vocabulary service for English vocabulary tool"
-requires-python = ">=3.8"
+authors = ["Your Name <your.email@example.com>"]
+packages = [{include = "src"}]
 
-dependencies = [
-    "nltk",
-    "wordfreq",
-    "python-dotenv",
-    "common @ {root:parent:parent:uri}/common",
-]
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[tool.hatch.build.targets.wheel]
-packages = ["."]
+[tool.poetry.dependencies]
+python = "^3.8"
+nltk = "^3.0"
+wordfreq = "^3.0"
+python-dotenv = "^1.0"
+common = {path = "../../common", develop = true}

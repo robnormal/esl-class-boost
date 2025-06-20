@@ -1,28 +1,23 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[project]
+[tool.poetry]
 name = "api"
 version = "0.1.0"
 description = "API service for English vocabulary tool"
+authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
-requires-python = ">=3.8"
+packages = [{include = "src"}]
 
-dependencies = [
-    "requests",
-    "boto3",
-    "beautifulsoup4",
-    "flask",
-    "flask-cors",
-    "flask-cognito",
-    "chardet",
-    "python-dotenv",
-    "common @ {root:parent:parent:uri}/common",
-]
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[tool.hatch.build.targets.wheel]
-packages = ["."]
+[tool.poetry.dependencies]
+python = "^3.8"
+requests = "^2.0"
+boto3 = "^1.0"
+beautifulsoup4 = "^4.0"
+flask = "^2.0"
+flask-cors = "^4.0"
+flask-cognito = "^1.0"
+chardet = "^5.0"
+python-dotenv = "^1.0"
+common = {path = "../../common", develop = true}

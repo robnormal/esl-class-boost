@@ -1,19 +1,14 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[project]
+[tool.poetry]
 name = "common"
 version = "0.2.5"
-description = "shared code for learning tool"
-requires-python = ">=3.8"
+description = "Shared code for English vocabulary learning tool"
+authors = ["Your Name <your.email@example.com>"]
+packages = [{include = "common"}]
 
-dependencies = [
-    "boto3",
-]
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[tool.hatch.build.targets.wheel]
-packages = ["."]
+[tool.poetry.dependencies]
+python = "^3.8"
+boto3 = "^1.0"
