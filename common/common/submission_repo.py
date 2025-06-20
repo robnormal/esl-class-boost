@@ -5,7 +5,6 @@ import boto3
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from boto3.dynamodb.conditions import Key
-from common.submission_repo import SubmissionState
 
 from common.constants import SUBMISSIONS_TABLE
 from common.logger import logger
@@ -16,16 +15,16 @@ class SubmissionState(Enum):
     VOCABULARIZED = 2
     SUMMARIZED = 4
 
-SUBMISSION_COMPLETED = (SubmissionState.RECEIVED
-                        | SubmissionState.PARAGRAPHED
-                        | SubmissionState.VOCABULARIZED
-                        | SubmissionState.SUMMARIZED)
+SUBMISSION_COMPLETED = (SubmissionState.RECEIVED.value
+                        | SubmissionState.PARAGRAPHED.value
+                        | SubmissionState.VOCABULARIZED.value
+                        | SubmissionState.SUMMARIZED.value)
 
 @dataclass
 class BaseSubmission:
     user_id: str
     submission_id: str
-    state: SubmissionState
+    state: int
     filename: Optional[str] = None
     paragraph_count: Optional[int] = None
 
@@ -54,12 +53,12 @@ class SubmissionRepo:
             return Submission(
                 user_id=user_id,
                 submission_id=submission_id,
-                state=SubmissionState(item.get('state')),
+                state=item.get('state'),
                 filename=item.get('filename'),
                 paragraph_count=item.get('paragraph_count'),
                 created_at=item.get('created_at'),
             )
-        except Exception as e:
+        except Exception as _e:
             logger.error(f"Bad item in submissions table: {item.get('submission_id', None)}")
             return None
 
@@ -67,7 +66,7 @@ class SubmissionRepo:
         item = {
             'user_id': base_record.user_id,
             'submission_id': base_record.submission_id,
-            'state': base_record.state.value,
+            'state': base_record.state,
         }
 
         # Add optional fields if they exist

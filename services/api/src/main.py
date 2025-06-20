@@ -1,4 +1,5 @@
 import os
+import traceback
 from typing import List, Dict
 
 import boto3
@@ -107,18 +108,20 @@ def submitted_file_content(req) -> tuple[bytes, None]|tuple[None, tuple[Response
         return content_bytes, None
 
 def get_submission_state_name(submission_item) -> str:
+    logger.info(submission_item)
     try:
-        state = SubmissionState(submission_item.get('state'))
-        if state == SubmissionState.RECEIVED:
+        state = submission_item.get('state')
+        if state == SubmissionState.RECEIVED.value:
             return 'received'
         elif state < SUBMISSION_COMPLETED:
             return 'processing'
         elif state == SUBMISSION_COMPLETED:
             return 'complete'
         else:
-            return 'Invalid state'
+            return str(state)
 
     except Exception as _e:
+        logger.error(traceback.format_exc())
         return 'Invalid state'
 
 @app.route("/generate-upload-url", methods=["POST"])
@@ -150,7 +153,7 @@ def generate_upload_url():
         new_submission = NewSubmission(
             user_id=user_id,
             submission_id=file_hash,
-            state=SubmissionState.RECEIVED,
+            state=SubmissionState.RECEIVED.value,
             filename=file_name
         )
         submission_repo.create(new_submission)
