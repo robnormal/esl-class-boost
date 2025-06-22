@@ -3,7 +3,7 @@ name = "summaries"
 version = "0.1.0"
 description = "Summaries service for English vocabulary tool"
 authors = ["Your Name <your.email@example.com>"]
-packages = [{include = "src"}]
+package-mode = false
 
 [build-system]
 requires = ["poetry-core"]

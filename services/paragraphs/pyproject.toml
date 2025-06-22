@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Paragraphs service for English vocabulary tool"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
-packages = [{include = "src"}]
+package-mode = false
 
 [build-system]
 requires = ["poetry-core"]

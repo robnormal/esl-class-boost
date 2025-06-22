@@ -9,6 +9,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 AWS_REGION="us-east-2"  # Change this to your region
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+BUILD_CONTEXT=$(pwd) # Docker build context has to include both the service code and `common`
 
 # Array of services
 SERVICES=("api" "paragraphs" "summaries" "vocabulary")
@@ -40,7 +41,7 @@ fi
 
 # Login to ECR
 echo "🔑 Logging into ECR..."
-aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
 
 cd services
 
@@ -51,7 +52,7 @@ for service in "${SERVICES[@]}"; do
 
     # Build Docker image
     echo "🏗️  Building Docker image for $service..."
-    docker build -f "Dockerfile.$service" -t "$REGISTRY_TAG" .
+    docker build -f "Dockerfile.$service" -t "$REGISTRY_TAG" "$BUILD_CONTEXT"
 
     # Tag image for ECR
     echo "🏷️  Tagging image for ECR..."

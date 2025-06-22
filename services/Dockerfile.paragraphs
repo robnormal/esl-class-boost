@@ -2,31 +2,46 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Add build argument for requirements file
-ARG PACKAGE_DIR=./paragraphs
+ARG SERVICE_NAME=paragraphs
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
-# Install system dependencies
+# ----------------------------
+# 1. System & build tooling
+# ----------------------------
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         gcc \
         python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the service code and common package
-COPY ${PACKAGE_DIR} ${PACKAGE_DIR}
-COPY ./common ./common
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    POETRY_VIRTUALENVS_CREATE=false \
+    POETRY_NO_INTERACTION=1
 
-# Install Python dependencies
-COPY ${PACKAGE_DIR}/requirements.txt ${PACKAGE_DIR}/requirements.txt
-RUN cd ${PACKAGE_DIR} && pip install -r requirements.txt
+# Install Poetry (locked to a specific version for reproducibility)
+RUN pip install --no-cache-dir "poetry==1.8.2"
 
-# Create a non-root user
+# ----------------------------
+# 2. Dependency installation
+# ----------------------------
+# Copy the shared common package first so path dependencies resolve
+COPY common /app/common
+
+# Copy only the dependency files first to leverage Docker layer caching
+COPY services/${SERVICE_NAME}/pyproject.toml  /app/services/${SERVICE_NAME}/pyproject.toml
+
+# Install Python dependencies defined by Poetry
+RUN cd /app/services/${SERVICE_NAME} && poetry install --no-dev --no-ansi
+
+# ----------------------------
+# 3. Copy service source code
+# ----------------------------
+COPY services/${SERVICE_NAME} /app/services
+
+# Run as non-root user
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
 # Run the service
-WORKDIR /app/${PACKAGE_DIR}
-CMD ["python", "main.py"]
+WORKDIR /app/services/${SERVICE_NAME}
+CMD ["python", "src/main.py"]

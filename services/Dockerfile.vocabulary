@@ -2,24 +2,39 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Add build argument for requirements file
-ARG SERVICE_DIR=./vocabulary
+ARG SERVICE_NAME=vocabulary
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
-# Install system dependencies
+# ----------------------------
+# 1. System & build tooling
+# ----------------------------
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         gcc \
         python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install nltk and dowload large resources
-# Do this before copying app code, so we don't have to re-download this whenever we rebuild
-RUN pip install nltk
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    POETRY_VIRTUALENVS_CREATE=false \
+    POETRY_NO_INTERACTION=1
 
-RUN python -c "import nltk; \
+# Install Poetry (locked to a specific version for reproducibility)
+RUN pip install --no-cache-dir "poetry==1.8.2"
+
+# ----------------------------
+# 2. Dependency installation
+# ----------------------------
+# Copy the shared common package first so path dependencies resolve
+COPY common /app/common
+
+# Copy only the dependency files first to leverage Docker layer caching
+COPY services/${SERVICE_NAME}/pyproject.toml  /app/services/${SERVICE_NAME}/pyproject.toml
+
+# Install Python dependencies defined by Poetry
+RUN cd /app/services/${SERVICE_NAME} && poetry install --no-dev --no-ansi
+
+# Download & cache nltk language files, which are large
+RUN cd /app/services/${SERVICE_NAME} && poetry run python -c "import nltk; \
     nltk.download('punkt'); \
     nltk.download('punkt_tab'); \
     nltk.download('averaged_perceptron_tagger'); \
@@ -28,18 +43,15 @@ RUN python -c "import nltk; \
     nltk.download('words'); \
     nltk.download('omw-1.4')"
 
-# Copy the service code and common package
-COPY ${SERVICE_DIR} ${SERVICE_DIR}
-COPY ./common ./common
+# ----------------------------
+# 3. Copy service source code
+# ----------------------------
+COPY services/${SERVICE_NAME} /app/services
 
-# Install Python dependencies
-COPY ${SERVICE_DIR}/requirements.txt ${SERVICE_DIR}/requirements.txt
-RUN cd ${SERVICE_DIR} && pip install -r requirements.txt
-
-# Create a non-root user
+# Run as non-root user
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
 # Run the service
-WORKDIR /app/${SERVICE_DIR}
-CMD ["python", "main.py"]
+WORKDIR /app/services/${SERVICE_NAME}
+CMD ["python", "src/main.py"]
