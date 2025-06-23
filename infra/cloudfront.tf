@@ -159,7 +159,7 @@ resource "aws_cloudfront_distribution" "website" {
   # Remove previous API behaviors and add a single /api/* behavior
   ordered_cache_behavior {
     path_pattern     = "/api/*"
-    allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST"]
+    allowed_methods  = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"]
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "ALB-${aws_lb.app_alb.name}"
 
