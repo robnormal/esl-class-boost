@@ -36,7 +36,7 @@ RUN cd /app/services/${SERVICE_NAME} && poetry install --no-dev --no-ansi
 # ----------------------------
 # 3. Copy service source code
 # ----------------------------
-COPY services/${SERVICE_NAME} /app/services
+COPY services/${SERVICE_NAME} /app/services/${SERVICE_NAME}
 
 # ----------------------------
 # 4. Runtime configuration

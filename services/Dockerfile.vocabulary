@@ -46,7 +46,7 @@ RUN cd /app/services/${SERVICE_NAME} && poetry run python -c "import nltk; \
 # ----------------------------
 # 3. Copy service source code
 # ----------------------------
-COPY services/${SERVICE_NAME} /app/services
+COPY services/${SERVICE_NAME} /app/services/${SERVICE_NAME}
 
 # Run as non-root user
 RUN useradd -m appuser && chown -R appuser:appuser /app
