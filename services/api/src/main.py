@@ -124,7 +124,7 @@ def get_submission_state_name(submission_item) -> str:
         logger.error(traceback.format_exc())
         return 'Invalid state'
 
-@app.route("/generate-upload-url", methods=["POST"])
+@app.route("/api/generate-upload-url", methods=["POST"])
 @conditional_cognito_auth
 def generate_upload_url():
     """
@@ -203,7 +203,7 @@ def group_by_paragraph(vocabulary_words: List[VocabularyWord]) -> Dict[int, List
         grouped_by_paragraph[vocabulary_word.paragraph_number].append(vocabulary_word.word)
     return grouped_by_paragraph
 
-@app.route("/files/<submission_id>/details", methods=["GET"])
+@app.route("/api/files/<submission_id>/details", methods=["GET"])
 @conditional_cognito_auth
 def get_submission_details(submission_id):
     logger.info(f'get_submission_details ${submission_id}')
@@ -212,7 +212,7 @@ def get_submission_details(submission_id):
     user_id = get_user_id()
 
     submission = SubmissionRepo(submissions_table).get_by_id(user_id, submission_id)
-    if submission.state != SubmissionState.PARAGRAPHED:
+    if submission.state != SUBMISSION_COMPLETED:
         return jsonify({"submission_id": submission_id, "error": f"Submission not ready yet. Try again later."}), 503
 
     # Fetch vocabulary from DynamoDB
@@ -245,7 +245,7 @@ def get_submission_details(submission_id):
         })
     return jsonify({"submission_id": submission_id, "details": details})
 
-@app.route("/files/<submission_id>/text", methods=["GET"])
+@app.route("/api/files/<submission_id>/text", methods=["GET"])
 @conditional_cognito_auth
 def get_submission_text(submission_id):
     """Returns the plain text of the submission by concatenating all paragraphs."""
@@ -275,7 +275,7 @@ def get_submission_text(submission_id):
         return jsonify({"error": f"Failed to retrieve submission text: {str(e)}"}), 500
 
 
-@app.route("/submissions", methods=["GET"])
+@app.route("/api/submissions", methods=["GET"])
 @conditional_cognito_auth
 def get_submissions_list():
     """

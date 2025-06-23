@@ -88,6 +88,18 @@ resource "aws_cloudfront_distribution" "website" {
   provider = aws.us_east_1
 
   origin {
+    domain_name = aws_lb.app_alb.dns_name
+    origin_id   = "ALB-${aws_lb.app_alb.name}"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  origin {
     domain_name = aws_s3_bucket.website.bucket_regional_domain_name
     origin_id   = "S3-${aws_s3_bucket.website.bucket}"
 
@@ -142,6 +154,20 @@ resource "aws_cloudfront_distribution" "website" {
     geo_restriction {
       restriction_type = "none"
     }
+  }
+
+  # Remove previous API behaviors and add a single /api/* behavior
+  ordered_cache_behavior {
+    path_pattern     = "/api/*"
+    allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "ALB-${aws_lb.app_alb.name}"
+
+    cache_policy_id            = aws_cloudfront_cache_policy.website_cache_policy.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security_headers.id
+
+    viewer_protocol_policy = "redirect-to-https"
+    compress               = true
   }
 }
 

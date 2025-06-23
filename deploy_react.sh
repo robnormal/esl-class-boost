@@ -19,7 +19,7 @@ cd ../frontend
 VITE_COGNITO_USER_POOL_ID="$USER_POOL_ID" \
   VITE_COGNITO_USER_POOL_CLIENT_ID="$USER_POOL_CLIENT_ID" \
   VITE_COGNITO_DOMAIN="$COGNITO_DOMAIN" \
-  VITE_BACKEND_URL="https://$CLOUDFRONT_DOMAIN" \
+  VITE_BACKEND_URL="https://$CLOUDFRONT_DOMAIN/api" \
   npm run build
 
 # Upload to S3 (sync deletes files no longer in the build folder)

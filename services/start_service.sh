@@ -1,4 +1,5 @@
 #!/bin/bash
+poetry env info -e
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -18,10 +19,7 @@ start_service() {
         echo "Valid services are: api, paragraphs, vocabulary"
         exit 1
     fi
-    local service_dir="$SCRIPT_DIR/$service_name"
-    local venv_dir
-
-    cd "$service_dir"
+    cd "$SCRIPT_DIR/$service_name"
 
     echo "🚀 Starting $service_name service..."
 
@@ -33,6 +31,7 @@ start_service() {
 
         # Start the service (adjust the command based on how each service should be started)
         # All services currently call their entrypoint the same way:
+        poetry env info -e
         poetry run python src/main.py
     )
 }

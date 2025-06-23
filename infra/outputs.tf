@@ -10,6 +10,10 @@ output "cloudfront_domain_name" {
   value = aws_cloudfront_distribution.website.domain_name
 }
 
+output "api_domain_name" {
+  value = aws_cloudfront_distribution.website.domain_name
+}
+
 output "cognito_user_pool_id" {
   value = aws_cognito_user_pool.user_pool.id
 }

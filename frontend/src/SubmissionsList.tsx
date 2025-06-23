@@ -96,7 +96,7 @@ const SubmissionsList: React.FC<SubmissionsListProps> = ({ userId }) => {
             <span className="filename-column">{submission.filename}</span>
             <span className="date-column">{new Date(submission.created_at * 1000).toLocaleDateString()}</span>
             <span className="status-column">{submission.status}</span>
-            {submission.status === 'paragraphed' && (
+            {submission.status === 'complete' && (
               <span className="actions-column">
                 <Link to={`/submission/${submission.id}`} className="view-button">
                   View Details
