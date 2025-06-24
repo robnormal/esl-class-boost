@@ -1,15 +1,18 @@
 """
 Google Cloud Document AI Paragraph Extractor
 """
+import json
 import re
-from os.path import isfile
 from typing import List, MutableSequence
+
+from google.oauth2 import service_account
 from google.cloud import documentai, documentai_v1
 from common.envvar import environment
 
-cred_path = environment.require('GOOGLE_APPLICATION_CREDENTIALS', 'File path to GCP credentials')
-if not isfile(cred_path):
-    raise ValueError(f"GOOGLE_APPLICATION_CREDENTIALS file path {cred_path} does not exist")
+# Load credentials for Google Cloud
+GCP_DOCUMENTAI_CREDENTIALS = environment.require('GCP_DOCUMENTAI_CREDENTIALS').strip()
+key_data = json.loads(GCP_DOCUMENTAI_CREDENTIALS)
+gcp_credentials = service_account.Credentials.from_service_account_info(key_data)
 
 MID_WORD_END_REGEX = re.compile('\\w[—\\-]$') # hyphenated
 MID_SENTENCE_END_REGEX = re.compile('[a-z]$')
@@ -32,7 +35,8 @@ def send_to_layout_processor(
     """
     # Initialize Document AI client
     client_options = {"api_endpoint": f"{location}-documentai.googleapis.com"}
-    client = documentai.DocumentProcessorServiceClient(client_options=client_options)
+    client = documentai.DocumentProcessorServiceClient(credentials=gcp_credentials, client_options=client_options)
+
 
     # Construct processor resource name
     resource_name = client.processor_path(project_id, location, processor_id)

@@ -4,23 +4,52 @@ locals {
       cpu            = "512"
       memory         = "1024"
       repository_name = "learning-tool-api"
+      image_tag      = "0.1.2"
     }
     paragraphs = {
       cpu            = "512"
       memory         = "1024"
       repository_name = "learning-tool-paragraphs"
+      image_tag      = "latest"
     }
     summaries = {
       cpu            = "512"
       memory         = "1024"
       repository_name = "learning-tool-summaries"
+      image_tag      = "latest"
     }
     vocabulary = {
       cpu            = "512"
       memory         = "1024"
       repository_name = "learning-tool-vocabulary"
+      image_tag      = "latest"
     }
   }
+}
+
+data "aws_ssm_parameter" "aws_secret_access_key" {
+  name = "/learning-tool/aws_secret_access_key"
+  with_decryption = true
+}
+data "aws_ssm_parameter" "aws_access_key_id" {
+  name = "/learning-tool/aws_access_key_id"
+  with_decryption = true
+}
+data "aws_ssm_parameter" "gcp_documentai_credentials" {
+  name = "/learning-tool/gcp_documentai_credentials"
+  with_decryption = true
+}
+data "aws_ssm_parameter" "gcp_project_id" {
+  name = "/learning-tool/gcp_project_id"
+  with_decryption = true
+}
+data "aws_ssm_parameter" "gcp_layout_parser_processor_id" {
+  name = "/learning-tool/gcp_layout_parser_processor_id"
+  with_decryption = true
+}
+data "aws_ssm_parameter" "openai_api_key" {
+  name = "/learning-tool/openai_api_key"
+  with_decryption = true
 }
 
 ## VPC ##
@@ -123,6 +152,27 @@ resource "aws_iam_role_policy" "ecs_logs_policy" {
   })
 }
 
+# Policy for reading parameters from SSM
+resource "aws_iam_role_policy" "ecs_ssm_policy" {
+  name = "ecs-ssm-policy"
+  role = aws_iam_role.ecs_task_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "ssm:GetParameters",
+          "ssm:GetParameter",
+          "ssm:GetParametersByPath"
+        ]
+        Effect = "Allow"
+        Resource = "arn:aws:ssm:us-east-2:${data.aws_caller_identity.current.account_id}:parameter/learning-tool/*"
+      }
+    ]
+  })
+}
+
 # ECS Tasks - one for each microservice
 
 resource "aws_ecs_task_definition" "tasks" {
@@ -138,10 +188,25 @@ resource "aws_ecs_task_definition" "tasks" {
   container_definitions = jsonencode([
     {
       name         = "${each.key}-task"
-      image        = "${aws_ecr_repository.repos[each.key].repository_url}:latest"
-      portMappings = [{ containerPort = 80, hostPort = 80 }]
+      image        = "${aws_ecr_repository.repos[each.key].repository_url}:${each.value.image_tag}"
+portMappings = [{ containerPort = 80, hostPort = 80 }]
       environment = [
-        { name = "ENVIRONMENT", value = "production" }
+        { name = "ENVIRONMENT", value = "production" },
+        { name = "FLASK_PORT", value = "80" },
+        { name = "SUBMISSIONS_BUCKET", value = "${aws_s3_bucket.submissions.bucket}" },
+        { name = "PARAGRAPHS_BUCKET", value = "${aws_s3_bucket.paragraphs.bucket}" },
+        { name = "AWS_ACCOUNT_ID", value = data.aws_caller_identity.current.account_id },
+        { name = "AWS_REGION", value = data.aws_region.current.name },
+        { name = "AWS_DEFAULT_REGION", value = data.aws_region.current.name },
+        { name = "GCP_LOCATION", value = "us" },
+      ]
+      secrets = [
+        { name = "AWS_SECRET_ACCESS_KEY", valueFrom = data.aws_ssm_parameter.aws_secret_access_key.arn },
+        { name = "AWS_ACCESS_KEY_ID", valueFrom = data.aws_ssm_parameter.aws_access_key_id.arn },
+        { name = "GCP_DOCUMENTAI_CREDENTIALS", valueFrom = data.aws_ssm_parameter.gcp_documentai_credentials.arn },
+        { name = "GCP_PROJECT_ID", valueFrom = data.aws_ssm_parameter.gcp_project_id.arn },
+        { name = "GCP_LAYOUT_PARSER_PROCESSOR_ID", valueFrom = data.aws_ssm_parameter.gcp_layout_parser_processor_id.arn },
+        { name = "OPENAI_API_KEY", valueFrom = data.aws_ssm_parameter.openai_api_key.arn }
       ]
       logConfiguration = {
         logDriver = "awslogs"
