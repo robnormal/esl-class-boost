@@ -43,9 +43,7 @@ COPY services/${SERVICE_NAME} /app/services/${SERVICE_NAME}
 # ----------------------------
 EXPOSE 5000
 
-# Run as non-root user
-RUN useradd -m appuser && chown -R appuser:appuser /app
-USER appuser
+# Run as root so we can listen to port 80
 
 # Run the service
 WORKDIR /app/services/${SERVICE_NAME}

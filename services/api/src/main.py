@@ -40,6 +40,7 @@ AWS_REGION = environment.require('AWS_REGION')
 SUBMISSIONS_BUCKET = environment.require('SUBMISSIONS_BUCKET')
 PARAGRAPHS_BUCKET = environment.require('PARAGRAPHS_BUCKET')
 CORS_ORIGINS = environment.require('CORS_ORIGINS').split(',')
+FLASK_PORT = environment.require('FLASK_PORT')
 
 CORS(app, origins=CORS_ORIGINS,
      supports_credentials=True,
@@ -123,6 +124,10 @@ def get_submission_state_name(submission_item) -> str:
     except Exception as _e:
         logger.error(traceback.format_exc())
         return 'Invalid state'
+
+@app.route("/api/health", methods=["GET"])
+def health():
+    return {"status": "ok"}
 
 @app.route("/api/generate-upload-url", methods=["POST"])
 @conditional_cognito_auth
@@ -321,4 +326,4 @@ def get_submissions_list():
         return jsonify({"error": f"Failed to fetch submissions: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=FLASK_PORT)
