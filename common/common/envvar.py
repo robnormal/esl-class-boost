@@ -5,12 +5,14 @@ class Environment:
         pass
 
     def require(self, name: str, error_message: str = '') -> str:
-        value = os.environ.get(name)
-        if not value:
+        if name not in os.environ:
             msg = f"Environment variable {name} is not set"
             if error_message:
                 msg += f": {error_message}"
             raise ValueError(msg)
-        return value
+        return os.environ.get(name)
+
+    def is_prod(self):
+        return self.require('ENVIRONMENT') == 'production'
 
 environment = Environment()

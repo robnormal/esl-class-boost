@@ -35,7 +35,7 @@ app.config['COGNITO_CHECK_TOKEN_EXPIRATION'] = True
 
 cognito = CognitoAuth(app)
 
-IS_LOCAL = environment.require('IS_LOCAL')
+IS_LOCAL = not environment.is_prod()
 AWS_REGION = environment.require('AWS_REGION')
 SUBMISSIONS_BUCKET = environment.require('SUBMISSIONS_BUCKET')
 PARAGRAPHS_BUCKET = environment.require('PARAGRAPHS_BUCKET')

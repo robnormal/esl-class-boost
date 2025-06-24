@@ -10,19 +10,19 @@ locals {
       cpu            = "512"
       memory         = "1024"
       repository_name = "learning-tool-paragraphs"
-      image_tag      = "latest"
+      image_tag      = "0.1.5"
     }
     summaries = {
       cpu            = "512"
       memory         = "1024"
       repository_name = "learning-tool-summaries"
-      image_tag      = "latest"
+      image_tag      = "0.1.1"
     }
     vocabulary = {
       cpu            = "512"
       memory         = "1024"
       repository_name = "learning-tool-vocabulary"
-      image_tag      = "latest"
+      image_tag      = "0.1.1"
     }
   }
 }
@@ -189,7 +189,7 @@ resource "aws_ecs_task_definition" "tasks" {
     {
       name         = "${each.key}-task"
       image        = "${aws_ecr_repository.repos[each.key].repository_url}:${each.value.image_tag}"
-portMappings = [{ containerPort = 80, hostPort = 80 }]
+      portMappings = [{ containerPort = 80, hostPort = 80 }]
       environment = [
         { name = "ENVIRONMENT", value = "production" },
         { name = "FLASK_PORT", value = "80" },

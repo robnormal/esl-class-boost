@@ -12,7 +12,9 @@ class SQSClient:
 
     def _get_client(self):
         if self._client is None:
-            endpoint_url = environment.require('AWS_ENDPOINT_URL') if environment.require('IS_LOCAL') else None
+            endpoint_url = None
+            if environment.require('ENVIRONMENT') != 'production':
+                endpoint_url = environment.require('AWS_ENDPOINT_URL')
             self._client = boto3.client(
                 'sqs',
                 region_name=environment.require('AWS_REGION'),

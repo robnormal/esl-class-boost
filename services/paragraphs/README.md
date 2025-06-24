@@ -37,7 +37,7 @@ AWS_REGION=us-east-2
 AWS_ENDPOINT_URL=http://localhost:4566
 
 # Service Configuration
-IS_LOCAL=true
+ENVIRONMENT=dev
 SUBMISSIONS_BUCKET=rhr79-history-learning-submissions
 PARAGRAPHS_BUCKET=rhr79-history-learning-paragraphs
 ```

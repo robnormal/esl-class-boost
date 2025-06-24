@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "common"
-version = "0.2.5"
+version = "0.2.6"
 description = "Shared code for English vocabulary learning tool"
 authors = ["Your Name <your.email@example.com>"]
 packages = [{include = "common"}]

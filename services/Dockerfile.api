@@ -37,6 +37,7 @@ RUN cd /app/services/${SERVICE_NAME} && poetry install --no-dev --no-ansi
 # 3. Copy service source code
 # ----------------------------
 COPY services/${SERVICE_NAME} /app/services/${SERVICE_NAME}
+RUN rm -f /app/services/${SERVICE_NAME}/.env
 
 # ----------------------------
 # 4. Runtime configuration
@@ -47,4 +48,4 @@ EXPOSE 5000
 
 # Run the service
 WORKDIR /app/services/${SERVICE_NAME}
-CMD ["python", "src/main.py"]
+CMD ["poetry", "run", "python", "src/main.py"]
