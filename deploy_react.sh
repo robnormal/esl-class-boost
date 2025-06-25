@@ -3,8 +3,11 @@
 # Stop on error
 set -e
 
+cd "$(dirname "${BASH_SOURCE[0]}")"
+rm -r frontend/dist/*
+
 # Get configuration variables from Terraform
-cd "$(dirname "${BASH_SOURCE[0]}")"/infra
+cd infra
 
 USER_POOL_ID=$(terraform output -raw cognito_user_pool_id)
 USER_POOL_CLIENT_ID=$(terraform output -raw cognito_user_pool_client_id)
