@@ -44,6 +44,10 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
     "ALLOW_REFRESH_TOKEN_AUTH",
     "ALLOW_USER_SRP_AUTH",
   ]
+
+  # Ensure username is included in tokens
+  read_attributes = ["email", "preferred_username"]
+  write_attributes = ["email", "preferred_username"]
 }
 
 # Cognito User Pool Domain

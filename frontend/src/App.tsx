@@ -15,7 +15,6 @@ const IS_DEV = import.meta.env.DEV;
 const COGNITO_USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID;
 const COGNITO_USER_POOL_CLIENT_ID = import.meta.env.VITE_COGNITO_USER_POOL_CLIENT_ID;
 const COGNITO_DOMAIN = import.meta.env.VITE_COGNITO_DOMAIN;
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 // Configure Amplify only in production
 if (!IS_DEV) {
@@ -28,8 +27,8 @@ if (!IS_DEV) {
           oauth: {
             domain: COGNITO_DOMAIN,
             scopes: ["openid", "email", "profile"],
-            redirectSignIn: [`${BACKEND_URL}/auth/callback`],
-            redirectSignOut: [`${BACKEND_URL}/logout`],
+            redirectSignIn: [window.location.origin + "/auth/callback"],
+            redirectSignOut: [window.location.origin + "/logout"],
             responseType: "token"
           }
         }
@@ -67,6 +66,8 @@ function AuthenticatedApp({ user }: { user: CurrentUser }) {
         <Route path="/" element={<Dashboard user={user} />}/>
         <Route path="/submission/:submissionId" element={<SubmissionDetailsWrapper/>}/>
         <Route path="/submissions" element={<SubmissionsList userId={user.username} />}/>
+        <Route path="/auth/callback" element={<div>Authenticating...</div>}/>
+        <Route path="/logout" element={<div>Logging out...</div>}/>
       </Routes>
     </div>
   );

@@ -8,7 +8,6 @@ from boto3.dynamodb.conditions import Key
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from flask_cognito import CognitoAuth, cognito_auth_required, current_cognito_jwt
-from functools import wraps
 import json
 
 # Load environment variables
@@ -60,17 +59,12 @@ submissions_table = dynamodb.Table(SUBMISSIONS_TABLE)
 vocab_table = dynamodb.Table(VOCABULARY_TABLE)
 summary_table = dynamodb.Table(SUMMARIES_TABLE)
 
-# New decorator to only apply cognito in prod
+# decorator to only apply cognito in prod
 def conditional_cognito_auth(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not IS_LOCAL:
-            # Apply Cognito authentication in non-development environments
-            return cognito_auth_required(f)(*args, **kwargs)
-        else:
-            # Bypass Cognito authentication in development
-            return f(*args, **kwargs)
-    return decorated_function
+    if not IS_LOCAL:
+        return cognito_auth_required(f)
+    else:
+        return f
 
 def get_user_id():
     if IS_LOCAL:

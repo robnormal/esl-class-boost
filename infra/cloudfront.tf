@@ -68,13 +68,16 @@ resource "aws_cloudfront_cache_policy" "website_cache_policy" {
 
   parameters_in_cache_key_and_forwarded_to_origin {
     cookies_config {
-      cookie_behavior = "none"
+      cookie_behavior = "all"
     }
     headers_config {
-      header_behavior = "none"
+      header_behavior = "whitelist"
+      headers {
+        items = ["Authorization"]
+      }
     }
     query_strings_config {
-      query_string_behavior = "none"
+      query_string_behavior = "all"
     }
     enable_accept_encoding_brotli = true
     enable_accept_encoding_gzip   = true
@@ -156,7 +159,6 @@ resource "aws_cloudfront_distribution" "website" {
     }
   }
 
-  # Remove previous API behaviors and add a single /api/* behavior
   ordered_cache_behavior {
     path_pattern     = "/api/*"
     allowed_methods  = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"]

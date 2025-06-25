@@ -1,5 +1,6 @@
 // frontend/src/SubmissionDetails.tsx
 import React, { useState, useEffect } from 'react';
+import { getSessionToken } from './utils/auth';
 
 interface ParagraphDetails {
   paragraph_index: number;
@@ -19,10 +20,54 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const downloadPlainText = async () => {
+    try {
+      const authToken = await getSessionToken();
+      if (!authToken) {
+        alert('Not logged in or unable to retrieve authentication token');
+        return;
+      }
+
+      const response = await fetch(`${BACKEND_URL}/files/${submissionId}/text`, {
+        headers: {
+          "Authorization": `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download plain text');
+      }
+
+      const text = await response.text();
+      const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+      const fake_a = document.createElement('a');
+      fake_a.href = url;
+      fake_a.download = `submission-${submissionId}.txt`;
+      document.body.appendChild(fake_a);
+      fake_a.click(); // Downloading starts here
+      document.body.removeChild(fake_a);
+      URL.revokeObjectURL(url);
+
+    } catch (err) {
+      console.error('Error downloading plain text:', err);
+      alert('Failed to download plain text');
+    }
+  };
+
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/files/${submissionId}/details`);
+        const authToken = await getSessionToken();
+        if (!authToken) {
+          setError('Not logged in or unable to retrieve authentication token');
+          return;
+        }
+
+        const response = await fetch(`${BACKEND_URL}/files/${submissionId}/details`, {
+          headers: {
+            "Authorization": `Bearer ${authToken}`,
+          },
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch submission details');
         }
@@ -54,9 +99,9 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
     <div>
       <h1 className="document-title">Study Guide</h1>
       <div className="download-section">
-        <a href={`${BACKEND_URL}/files/${submissionId}/text`} className="download-link">
+        <button onClick={downloadPlainText} className="download-link">
           Download Plain Text
-        </a>
+        </button>
       </div>
       {details.map((detail, index) => (
         <div key={index} className="paragraph-study-guide">

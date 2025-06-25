@@ -4,7 +4,7 @@ locals {
       cpu            = "512"
       memory         = "1024"
       repository_name = "learning-tool-api"
-      image_tag      = "0.1.2"
+      image_tag      = "0.1.8"
     }
     paragraphs = {
       cpu            = "512"
@@ -198,7 +198,10 @@ resource "aws_ecs_task_definition" "tasks" {
         { name = "AWS_ACCOUNT_ID", value = data.aws_caller_identity.current.account_id },
         { name = "AWS_REGION", value = data.aws_region.current.name },
         { name = "AWS_DEFAULT_REGION", value = data.aws_region.current.name },
+        { name = "COGNITO_USERPOOL_ID", value = aws_cognito_user_pool.user_pool.id },
+        { name = "COGNITO_APP_CLIENT_ID", value = aws_cognito_user_pool_client.user_pool_client.id },
         { name = "GCP_LOCATION", value = "us" },
+        { name = "CORS_ORIGINS", value = "https://${aws_cloudfront_distribution.website.domain_name}" }
       ]
       secrets = [
         { name = "AWS_SECRET_ACCESS_KEY", valueFrom = data.aws_ssm_parameter.aws_secret_access_key.arn },

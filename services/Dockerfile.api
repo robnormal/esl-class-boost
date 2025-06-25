@@ -42,7 +42,7 @@ RUN rm -f /app/services/${SERVICE_NAME}/.env
 # ----------------------------
 # 4. Runtime configuration
 # ----------------------------
-EXPOSE 5000
+EXPOSE 80
 
 # Run as root so we can listen to port 80
 

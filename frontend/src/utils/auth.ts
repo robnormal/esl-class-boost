@@ -9,10 +9,9 @@ export async function getSessionToken(): Promise<string|undefined> {
   }
   try {
     const session = await fetchAuthSession();
-    // Get the JWT token string - Amplify v6 format
-    return session.tokens?.idToken?.toString();
+    return session.tokens?.accessToken?.toString();
   } catch (error) {
     console.error("Error getting auth session:", error);
-    return undefined;
+    return;
   }
-} 
+}
