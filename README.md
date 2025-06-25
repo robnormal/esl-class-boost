@@ -1,4 +1,11 @@
+# TODO: flesh out this README
+
 To launch everything locally:
+
+- install poetry
+- install poetry dotenv
+- add environment variables (to .env or .bashrc) (instructions, example file)
+  - include instructions for getting gcloud credentials
 
 ```shell
 bash local_start.sh
