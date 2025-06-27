@@ -552,3 +552,157 @@
 .sign-out-button:hover {
   background-color: #c62828;
 }
+
+/* Submission Details Styles */
+.document-title {
+  color: #333;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 2rem 0 1.5rem 0;
+  text-align: center;
+  border-bottom: 3px solid #1976d2;
+  padding-bottom: 1rem;
+}
+
+.download-section {
+  text-align: center;
+  margin: 2rem 0;
+  padding: 1rem;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.download-link {
+  display: inline-block;
+  background-color: #4CAF50;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.download-link:hover {
+  background-color: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.paragraph-study-guide {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  margin: 2rem auto;
+  padding: 2rem;
+  max-width: 900px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  transition: box-shadow 0.3s ease;
+}
+
+.paragraph-study-guide:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.paragraph-start {
+  font-family: 'Georgia', serif;
+  font-style: italic;
+  font-size: 1.15rem;
+  color: #444;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1.25rem;
+  border-left: 4px solid #bbb;
+  background: #faf9f7;
+  border-radius: 0 6px 6px 0;
+  font-weight: 400;
+}
+
+.paragraph-summary {
+  background: #f6f6f6;
+  padding: 1.25rem 1.5rem 1.25rem 1.5rem;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+  border: 1px solid #e0e0e0;
+  color: #333;
+  font-size: 1rem;
+  line-height: 1.6;
+  position: relative;
+}
+
+.paragraph-summary::before {
+  content: 'Summary';
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #888;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.5px;
+}
+
+.vocabulary-section {
+  background: #fcfcfc;
+  padding: 1.25rem 1.5rem;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  margin-top: 1.25rem;
+}
+
+.vocabulary-title {
+  color: #555;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.vocabulary-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.vocabulary-list li {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 0.4rem 1rem;
+  font-size: 0.98rem;
+  color: #444;
+  font-family: inherit;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+/* Responsive adjustments for submission details */
+@media (max-width: 768px) {
+  .document-title {
+    font-size: 2rem;
+    margin: 1.5rem 0 1rem 0;
+  }
+
+  .paragraph-study-guide {
+    margin: 1.5rem 1rem;
+    padding: 1.5rem;
+  }
+
+  .paragraph-start {
+    font-size: 1.1rem;
+  }
+
+  .vocabulary-list {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.4rem;
+  }
+
+  .vocabulary-list li {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.9rem;
+  }
+}
