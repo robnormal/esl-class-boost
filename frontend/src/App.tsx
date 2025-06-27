@@ -1,7 +1,6 @@
 import React, { useState, useEffect, JSX } from 'react';
-import { Authenticator } from '@aws-amplify/ui-react';
 import { Amplify } from 'aws-amplify';
-import { getCurrentUser, signOut } from 'aws-amplify/auth';
+import { getCurrentUser, signOut, signIn } from 'aws-amplify/auth';
 import './App.css';
 import { Routes, Route, Link } from 'react-router-dom';
 import SubmissionDetails from './SubmissionDetails';
@@ -43,10 +42,11 @@ function SubmissionDetailsWrapper() {
   return <SubmissionDetails submissionId={submissionId} />;
 }
 
-function AuthenticatedApp({ user }: { user: CurrentUser }) {
+function AuthenticatedApp({ user, onSignOut }: { user: CurrentUser; onSignOut: () => Promise<void> }) {
   async function handleSignOut(): Promise<void> {
     try {
       await signOut();
+      await onSignOut(); // Call the parent's callback to update state
     } catch (error) {
       console.log('Error signing out: ', error);
     }
@@ -69,6 +69,66 @@ function AuthenticatedApp({ user }: { user: CurrentUser }) {
         <Route path="/auth/callback" element={<div>Authenticating...</div>}/>
         <Route path="/logout" element={<div>Logging out...</div>}/>
       </Routes>
+    </div>
+  );
+}
+
+function CustomSignInForm({ onSignIn }: { onSignIn: (username: string, password: string) => Promise<void> }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await onSignIn(username, password);
+    } catch (err: any) {
+      setError(err.message || 'Sign in failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="login-container">
+      <h1>History Learning Platform</h1>
+      <p>Please sign in to access your learning materials</p>
+
+      <form onSubmit={handleSubmit} className="sign-in-form">
+        <div className="form-group">
+          <label htmlFor="username">Username</label>
+          <input
+            id="username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            disabled={isLoading}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={isLoading}
+          />
+        </div>
+
+        {error && <div className="error-message">{error}</div>}
+
+        <button type="submit" disabled={isLoading} className="sign-in-button">
+          {isLoading ? 'Signing in...' : 'Sign In'}
+        </button>
+      </form>
     </div>
   );
 }
@@ -100,37 +160,46 @@ function App(): JSX.Element {
     }
   }
 
+  async function onSignOut(): Promise<void> {
+    setUser(null);
+  }
+
+  async function handleCustomSignIn(username: string, password: string): Promise<void> {
+    const result = await signIn({ username, password });
+
+    // Handle the sign-in result - if it requires additional steps, we'll ignore them
+    if (result.isSignedIn) {
+      // User is signed in, refresh our state
+      await checkAuthState();
+    } else if (result.nextStep) {
+      // If there are additional steps (like verification), we'll try to get the current user anyway
+      // This works for users who are already verified but Cognito still wants to show verification steps
+      try {
+        const userData = await getCurrentUser();
+        setUser(userData);
+      } catch (error) {
+        throw new Error('Authentication incomplete. Please contact your administrator.');
+      }
+    }
+  }
+
   if (isLoading) {
     return <div className="app-container">Loading...</div>;
   }
 
-  const components = {
-    SignIn: {
-      Footer() {
-        return null;
-      },
-    },
-  };
-
   // In development, show authenticated app directly
   if (IS_DEV && user) {
-    return <AuthenticatedApp user={user} />;
+    return <AuthenticatedApp user={user} onSignOut={onSignOut} />;
   }
 
-  // In production, wrap everything with Authenticator
-  if (!IS_DEV) {
-    return (
-      <Authenticator initialState="signIn" hideSignUp components={components}>
-        {({ user: amplifyUser }) => {
-          // Update local user state when Amplify user changes
-          if (amplifyUser && !user) {
-            setUser(amplifyUser);
-          }
+  // If user is authenticated, show the app
+  if (user) {
+    return <AuthenticatedApp user={user} onSignOut={onSignOut} />;
+  }
 
-          return user ? <AuthenticatedApp user={user} /> : <div>Loading...</div>;
-        }}
-      </Authenticator>
-    );
+  // Show custom sign-in form instead of Authenticator
+  if (!IS_DEV) {
+    return <CustomSignInForm onSignIn={handleCustomSignIn} />;
   }
 
   // Development without authenticated user - show login prompt
