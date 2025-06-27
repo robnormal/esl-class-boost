@@ -4,7 +4,7 @@ locals {
       cpu            = "512"
       memory         = "1024"
       repository_name = "learning-tool-api"
-      image_tag      = "0.1.8"
+      image_tag      = "0.1.10"
     }
     paragraphs = {
       cpu            = "512"
@@ -22,7 +22,7 @@ locals {
       cpu            = "512"
       memory         = "1024"
       repository_name = "learning-tool-vocabulary"
-      image_tag      = "0.1.1"
+      image_tag      = "0.1.2"
     }
   }
 }

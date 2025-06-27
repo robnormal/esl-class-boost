@@ -61,7 +61,7 @@ resource "aws_cloudfront_origin_access_identity" "oai" {
 # Create a new cache policy for your CloudFront distribution
 resource "aws_cloudfront_cache_policy" "website_cache_policy" {
   name        = "WebsiteCachePolicy"
-  comment     = "Cache policy for history learning website"
+  comment     = "Cache policy for history learning website static files"
   default_ttl = 3600
   max_ttl     = 86400
   min_ttl     = 0
@@ -81,6 +81,46 @@ resource "aws_cloudfront_cache_policy" "website_cache_policy" {
     }
     enable_accept_encoding_brotli = true
     enable_accept_encoding_gzip   = true
+  }
+}
+
+# Create a separate cache policy for API requests - no caching
+resource "aws_cloudfront_cache_policy" "api_no_cache_policy" {
+  name        = "APINoCachePolicy"
+  comment     = "No cache policy for API requests during development"
+  default_ttl = 0
+  max_ttl     = 0
+  min_ttl     = 0
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    cookies_config {
+      cookie_behavior = "none"
+    }
+    headers_config {
+      header_behavior = "none"
+    }
+    query_strings_config {
+      query_string_behavior = "none"
+    }
+    enable_accept_encoding_brotli = false
+    enable_accept_encoding_gzip   = false
+  }
+}
+
+# Origin request policy - policy about what parts of the request to forward to the backend
+resource "aws_cloudfront_origin_request_policy" "all_viewer" {
+  name = "AllViewerHeadersPolicy"
+
+  headers_config {
+    header_behavior = "allViewer"
+  }
+
+  cookies_config {
+    cookie_behavior = "all"
+  }
+
+  query_strings_config {
+    query_string_behavior = "all"
   }
 }
 
@@ -165,7 +205,8 @@ resource "aws_cloudfront_distribution" "website" {
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "ALB-${aws_lb.app_alb.name}"
 
-    cache_policy_id            = aws_cloudfront_cache_policy.website_cache_policy.id
+    cache_policy_id            = aws_cloudfront_cache_policy.api_no_cache_policy.id
+    origin_request_policy_id   = aws_cloudfront_origin_request_policy.all_viewer.id
     response_headers_policy_id = aws_cloudfront_response_headers_policy.security_headers.id
 
     viewer_protocol_policy = "redirect-to-https"

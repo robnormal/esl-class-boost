@@ -13,6 +13,17 @@ resource "aws_cognito_user_pool" "user_pool" {
       priority = 1
     }
   }
+
+  # Explicitly define the email schema to match existing state
+  schema {
+    attribute_data_type = "String"
+    developer_only_attribute = false
+    mutable             = true
+    name                = "email"
+    required            = false
+
+    string_attribute_constraints {}
+  }
 }
 
 # Cognito User Pool Client
