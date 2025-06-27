@@ -12,20 +12,20 @@ function random_string {
   tr -dc "A-Za-z\!-@" </dev/urandom | head -c "$1"
 }
 
-#aws cognito-idp admin-create-user \
-#  --user-pool-id "$COGNITO_USER_POOL_ID" \
-#  --username "$1" \
-#  --message-action SUPPRESS
-#
-#aws cognito-idp admin-update-user-attributes \
-#  --user-pool-id "$COGNITO_USER_POOL_ID" \
-#  --username "$1" \
-#  --user-attributes Name=email,Value="$1@example.com"
-#
-#aws cognito-idp admin-update-user-attributes \
-#  --user-pool-id "$COGNITO_USER_POOL_ID" \
-#  --username "$1" \
-#  --user-attributes Name=email_verified,Value=true
+aws cognito-idp admin-create-user \
+  --user-pool-id "$COGNITO_USER_POOL_ID" \
+  --username "$1" \
+  --message-action SUPPRESS
+
+aws cognito-idp admin-update-user-attributes \
+  --user-pool-id "$COGNITO_USER_POOL_ID" \
+  --username "$1" \
+  --user-attributes Name=email,Value="$1@example.com"
+
+aws cognito-idp admin-update-user-attributes \
+  --user-pool-id "$COGNITO_USER_POOL_ID" \
+  --username "$1" \
+  --user-attributes Name=email_verified,Value=true
 
 PASSWORD=$(random_string 16)
 
