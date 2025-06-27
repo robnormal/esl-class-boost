@@ -33,6 +33,10 @@ COPY services/${SERVICE_NAME}/pyproject.toml  /app/services/${SERVICE_NAME}/pypr
 # Install Python dependencies defined by Poetry
 RUN cd /app/services/${SERVICE_NAME} && poetry install --no-dev --no-ansi
 
+# Run as non-root user
+RUN useradd -m appuser && chown -R appuser:appuser /app
+USER appuser
+
 # Download & cache nltk language files, which are large
 RUN cd /app/services/${SERVICE_NAME} && poetry run python -c "import nltk; \
     nltk.download('punkt'); \
@@ -48,10 +52,6 @@ RUN cd /app/services/${SERVICE_NAME} && poetry run python -c "import nltk; \
 # ----------------------------
 COPY services/${SERVICE_NAME} /app/services/${SERVICE_NAME}
 RUN rm -f /app/services/${SERVICE_NAME}/.env
-
-# Run as non-root user
-RUN useradd -m appuser && chown -R appuser:appuser /app
-USER appuser
 
 # Run the service
 WORKDIR /app/services/${SERVICE_NAME}
