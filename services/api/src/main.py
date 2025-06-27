@@ -71,7 +71,7 @@ def get_user_id():
         return 'dev-user'
     else:
         # Use Cognito for production
-        return current_cognito_jwt['sub']
+        return current_cognito_jwt['username']
 
 def submitted_file_content(req) -> tuple[bytes, None]|tuple[None, tuple[Response, int]]:
     """
