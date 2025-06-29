@@ -610,8 +610,9 @@
 
 .paragraph-start {
   font-family: 'Georgia', serif;
-  font-style: italic;
-  font-size: 1.15rem;
+  font-style: normal;
+  text-decoration: none;
+  font-size: 1rem;
   color: #444;
   margin-bottom: 1rem;
   padding: 0.75rem 1.25rem;
@@ -704,5 +705,82 @@
   .vocabulary-list li {
     padding: 0.6rem 0.8rem;
     font-size: 0.9rem;
+  }
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  font-size: 1em;
+  line-height: 1.6;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f4f4f4;
+}
+
+h1 {
+  font-size: 2em;
+}
+h3.paragraph-start {
+  font-size: 1rem;
+  font-style: normal;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.document-title {
+  text-align: center;
+  color: #2c3e50;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.paragraph-study-guide {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+  padding: 20px;
+}
+
+.paragraph-start {
+  font-weight: bold;
+}
+
+.paragraph-summary {
+  /* font-style: italic;*/
+  /* color: #34495e; */
+  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.vocabulary-section {
+  background-color: #f9f9f9;
+  border-left: 4px solid #3498db;
+  padding: 15px;
+}
+
+.vocabulary-title {
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.vocabulary-list {
+  column-count: 3;
+  column-gap: 20px;
+  list-style-type: none;
+  padding: 0;
+}
+
+.vocabulary-list li {
+  margin-bottom: 5px;
+  break-inside: avoid;
+}
+
+@media (max-width: 600px) {
+  .vocabulary-list {
+    column-count: 2;
   }
 }

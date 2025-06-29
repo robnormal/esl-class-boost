@@ -247,7 +247,7 @@ def get_submission_details(submission_id):
 @app.route("/api/files/<submission_id>/text", methods=["GET"])
 @conditional_cognito_auth
 def get_submission_text(submission_id):
-    """Returns the plain text of the submission by concatenating all paragraphs."""
+    """Returns the paragraphs of the submission as a list."""
     logger.info(f'get_submission_text {submission_id}')
     user_id = get_user_id()
 
@@ -264,11 +264,9 @@ def get_submission_text(submission_id):
             Key=f"{submission.s3_base_path()}.json"
         )
         paragraphs = json.loads(response['Body'].read().decode('utf-8'))
-
-        # Concatenate paragraphs with double newlines
-        text = "\n\n".join(paragraphs)
-        return Response(text, mimetype='text/plain')
-
+        if not isinstance(paragraphs, list):
+            return jsonify({"error": "Paragraphs data is not a list"}), 500
+        return jsonify({"paragraphs": paragraphs})
     except Exception as e:
         logger.error(f"Error retrieving submission text: {e}", exc_info=True)
         return jsonify({"error": f"Failed to retrieve submission text: {str(e)}"}), 500
