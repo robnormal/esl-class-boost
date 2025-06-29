@@ -317,5 +317,33 @@ def get_submissions_list():
         logger.error(f"Error fetching submissions: {e}", exc_info=True)
         return jsonify({"error": f"Failed to fetch submissions: {str(e)}"}), 500
 
+@app.route("/api/definition/<word>", methods=["GET"])
+def get_word_definition(word):
+    """Proxy to dictionaryapi.dev to get the definition of a word, formatted for the frontend."""
+    try:
+        resp = requests.get(
+            f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}",
+            timeout=10
+        )
+        if resp.status_code != 200:
+            return jsonify({"error": f"DictionaryAPI error: {resp.status_code}"}), resp.status_code
+        data = resp.json()
+        # data is a list of entries, each with meanings, each with definitions
+        definitions = []
+        if isinstance(data, list):
+            for entry in data:
+                for meaning in entry.get("meanings", []):
+                    part_of_speech = meaning.get("partOfSpeech")
+                    for definition in meaning.get("definitions", []):
+                        def_text = definition.get("definition")
+                        if def_text:
+                            definitions.append({
+                                "definition": def_text,
+                                "partOfSpeech": part_of_speech
+                            })
+        return jsonify(definitions)
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch definition: {str(e)}"}), 500
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=FLASK_PORT)
