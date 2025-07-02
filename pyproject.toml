@@ -4,7 +4,16 @@ version = "0.1.0"
 description = "English vocabulary learning tool with microservices architecture"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
-packages = []
+package-mode = false
+
+[tool.poetry.workspace]
+packages = [
+    "services/api",
+    "services/paragraphs",
+    "services/summaries",
+    "services/vocabulary",
+    "common/common"
+]
 
 [build-system]
 requires = ["poetry-core"]
@@ -17,4 +26,4 @@ python = "^3.8"
 pytest = "^7.0"
 black = "^23.0"
 flake8 = "^6.0"
-mypy = "^1.0" 
+mypy = "^1.0"

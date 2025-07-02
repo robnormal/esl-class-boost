@@ -319,7 +319,7 @@ def get_submissions_list():
 
 @app.route("/api/definition/<word>", methods=["GET"])
 def get_word_definition(word):
-    """Proxy to dictionaryapi.dev to get the definition of a word, formatted for the frontend."""
+    """Proxy to dictionaryapi.dev to get the definition of a word."""
     try:
         resp = requests.get(
             f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}",
