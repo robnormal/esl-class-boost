@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "ES6",
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "types": ["@testing-library/jest-dom", "node", "jest"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
