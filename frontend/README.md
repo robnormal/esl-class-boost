@@ -1,70 +1,81 @@
-# Getting Started with Create React App
+# English Vocabulary Tool – Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This directory contains the React-based frontend for the English Vocabulary Tool. The frontend provides a user interface for interacting with the application's features, such as submitting documents, viewing extracted vocabulary, and managing summaries.
 
-## Available Scripts
+## Overview
 
-In the project directory, you can run:
+The frontend is built with [React](https://reactjs.org/) and uses TypeScript for type safety. It communicates with backend services via API calls and provides a modern, responsive UI for end users.
 
-### `npm start`
+## Directory Structure
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **public/**  
+  Static assets such as the favicon, manifest, and images used by the app.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- **src/**  
+  Main source code for the React application:
+  - `App.tsx` – Main application component and routing.
+  - `Dashboard.tsx` – Dashboard view for users.
+  - `SubmissionForm.tsx` – Form for submitting documents for vocabulary extraction.
+  - `SubmissionsList.tsx` – Displays a list of user submissions.
+  - `SubmissionDetails.tsx` – Shows details for a specific submission.
+  - `utils/auth.ts` – Authentication utilities (e.g., token handling).
+  - `index.tsx` – Entry point for the React app.
+  - `index.css`, `App.css` – Global and component-specific styles.
 
-### `npm test`
+- **build.sh**  
+  Script to build the frontend for production deployment.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **package.json** and **package-lock.json**  
+  Project dependencies and scripts.
 
-### `npm run build`
+- **tsconfig.json**  
+  TypeScript configuration.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **vite.config.js**  
+  Configuration for the Vite build tool.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Key Features
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- **Document Submission:** Users can upload documents for vocabulary extraction.
+- **Vocabulary & Summaries:** View extracted vocabulary words and generated summaries.
+- **Authentication:** Handles user authentication (see `utils/auth.ts`).
+- **Responsive UI:** Built with modern React best practices.
 
-### `npm run eject`
+## Development
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+To get started with local development:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+This will start the development server (using Vite) and open the app in your browser.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Building for Production
 
-## Learn More
+To build the app for production:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+npm run build
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+The output will be in the `dist/` directory, ready for deployment.
 
-### Code Splitting
+## Testing
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Basic tests are included (see `App.test.js`). Run tests with:
 
-### Analyzing the Bundle Size
+```bash
+npm test
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Notes
 
-### Making a Progressive Web App
+- The frontend expects backend services to be running and accessible via configured API endpoints.
+- For environment-specific configuration, see `.env` files or Vite config.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+---
 
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+For more details on the overall project, see the root-level `README.md`.
