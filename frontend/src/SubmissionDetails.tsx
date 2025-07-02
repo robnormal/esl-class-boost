@@ -25,9 +25,9 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
   const [details, setDetails] = useState<ParagraphDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  // Track expanded paragraphs
+  // Track which paragraphs are expanded
   const [expanded, setExpanded] = useState<{ [index: number]: boolean }>({});
-  // Store all paragraphs once fetched
+  // Cache paragraphs once fetched
   const [allParagraphs, setAllParagraphs] = useState<string[] | null>(null);
   const [definitionModal, setDefinitionModal] = useState<{
     word: string;
@@ -192,7 +192,7 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
             {expanded[detail.paragraph_index] && allParagraphs && allParagraphs[detail.paragraph_index]
               ? allParagraphs[detail.paragraph_index]
               : detail.paragraph_start + '...'}
-            <span style={{ marginLeft: 8, fontSize: '0.8em', color: '#0074d9' }}>
+            <span className="expand-toggle">
               [{expanded[detail.paragraph_index] ? 'Collapse' : 'Expand'}]
             </span>
           </h3>
@@ -203,7 +203,7 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
               {detail.vocabulary.map((word, i) => (
                 <li key={i}>
                   <button
-                    style={{ cursor: 'pointer', color: '#0074d9', background: 'none', border: 'none', textDecoration: 'underline', padding: 0 }}
+                    className="vocab-word-btn"
                     onClick={() => fetchWordDefinition(word)}
                     title={`Show definition for ${word}`}
                   >
@@ -218,42 +218,23 @@ const SubmissionDetails: React.FC<SubmissionDetailsProps> = ({ submissionId }) =
       {/* Definition Modal */}
       {definitionModal.open && (
         <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            background: 'rgba(0,0,0,0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
+          className="modal-overlay"
           onClick={closeModal}
         >
           <div
-            style={{
-              background: 'white',
-              padding: '2rem',
-              borderRadius: '8px',
-              minWidth: '300px',
-              maxWidth: '90vw',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-              position: 'relative',
-            }}
+            className="modal-content"
             onClick={e => e.stopPropagation()}
           >
             <button
               onClick={closeModal}
-              style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', fontSize: '1.2em', cursor: 'pointer' }}
+              className="modal-close-btn"
               aria-label="Close"
             >
               ×
             </button>
             <h2>Definition: {definitionModal.word}</h2>
             {definitionModal.loading && <div>Loading...</div>}
-            {definitionModal.error && <div style={{ color: 'red' }}>{definitionModal.error}</div>}
+            {definitionModal.error && <div className="definition-error">{definitionModal.error}</div>}
             {definitionModal.definitions && definitionModal.definitions.results && definitionModal.definitions.results.length > 0 ? (
               <ul>
                 {definitionModal.definitions.results.map((def, idx) => (

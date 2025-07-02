@@ -784,3 +784,72 @@ h3.paragraph-start {
     column-count: 2;
   }
 }
+
+.expand-toggle {
+  margin-left: 8px;
+  font-size: 0.8em;
+  color: #0074d9;
+}
+
+.vocab-word-btn {
+  cursor: pointer;
+  color: #0074d9;
+  background: none;
+  border: none;
+  text-decoration: underline;
+  padding: 0;
+  font: inherit;
+}
+
+.vocab-word-btn:hover {
+  color: #005fa3;
+  text-decoration: underline;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  min-width: 300px;
+  max-width: 90vw;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  cursor: pointer;
+  color: #888;
+  padding: 0 6px;
+  line-height: 1;
+}
+
+.modal-close-btn:hover {
+  color: #d32f2f;
+  background: #f5f5f5;
+  border-radius: 50%;
+}
+
+.definition-error {
+  color: red;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
