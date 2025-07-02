@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import SubmissionForm from './SubmissionForm';
 
@@ -27,4 +26,4 @@ function Dashboard({ user }: DashboardProps) {
   );
 }
 
-export default Dashboard; 
+export default Dashboard;
