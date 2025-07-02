@@ -7,6 +7,7 @@ import SubmissionDetails from './SubmissionDetails';
 import SubmissionsList from './SubmissionsList';
 import Dashboard from './Dashboard';
 import { useParams } from 'react-router-dom';
+import SignInForm from './SignInForm';
 
 type CurrentUser = Awaited<ReturnType<typeof getCurrentUser>>;
 
@@ -73,66 +74,6 @@ function AuthenticatedApp({ user, onSignOut }: { user: CurrentUser; onSignOut: (
   );
 }
 
-function CustomSignInForm({ onSignIn }: { onSignIn: (username: string, password: string) => Promise<void> }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    try {
-      await onSignIn(username, password);
-    } catch (err: any) {
-      setError(err.message || 'Sign in failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="login-container">
-      <h1>History Learning Platform</h1>
-      <p>Please sign in to access your learning materials</p>
-
-      <form onSubmit={handleSubmit} className="sign-in-form">
-        <div className="form-group">
-          <label htmlFor="username">Username</label>
-          <input
-            id="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            disabled={isLoading}
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={isLoading}
-          />
-        </div>
-
-        {error && <div className="error-message">{error}</div>}
-
-        <button type="submit" disabled={isLoading} className="sign-in-button">
-          {isLoading ? 'Signing in...' : 'Sign In'}
-        </button>
-      </form>
-    </div>
-  );
-}
-
 function App(): JSX.Element {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -167,13 +108,11 @@ function App(): JSX.Element {
   async function handleCustomSignIn(username: string, password: string): Promise<void> {
     const result = await signIn({ username, password });
 
-    // Handle the sign-in result - if it requires additional steps, we'll ignore them
     if (result.isSignedIn) {
       // User is signed in, refresh our state
       await checkAuthState();
     } else if (result.nextStep) {
-      // If there are additional steps (like verification), we'll try to get the current user anyway
-      // This works for users who are already verified but Cognito still wants to show verification steps
+      // We don't want to go through additional steps like verification so we'll set the current user anyway
       try {
         const userData = await getCurrentUser();
         setUser(userData);
@@ -185,33 +124,24 @@ function App(): JSX.Element {
 
   if (isLoading) {
     return <div className="app-container">Loading...</div>;
-  }
-
-  // In development, show authenticated app directly
-  if (IS_DEV && user) {
+  } else if (user) {
+    // If user is authenticated, show the app
     return <AuthenticatedApp user={user} onSignOut={onSignOut} />;
-  }
-
-  // If user is authenticated, show the app
-  if (user) {
-    return <AuthenticatedApp user={user} onSignOut={onSignOut} />;
-  }
-
-  // Show custom sign-in form instead of Authenticator
-  if (!IS_DEV) {
-    return <CustomSignInForm onSignIn={handleCustomSignIn} />;
-  }
-
-  // Development without authenticated user - show login prompt
-  return (
-    <div className="app-container">
-      <div className="login-container">
-        <h1>History Learning Platform</h1>
-        <p>Development mode - please authenticate to continue</p>
-        <button onClick={checkAuthState}>Check Authentication</button>
+  } else if (!IS_DEV) {
+    // Show sign-in form in production
+    return <SignInForm onSignIn={handleCustomSignIn} />;
+  } else {
+    // Show login prompt in development
+    return (
+      <div className="app-container">
+        <div className="login-container">
+          <h1>History Learning Platform</h1>
+          <p>Development mode - please authenticate to continue</p>
+          <button onClick={checkAuthState}>Check Authentication</button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 }
 
 export default App;
