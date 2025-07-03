@@ -1,4 +1,4 @@
-# English Vocabulary Tool – Frontend
+# Learning Tool – Frontend
 
 This directory contains the React-based frontend for the English Vocabulary Tool. The frontend provides a user interface for interacting with the application's features, such as submitting documents, viewing extracted vocabulary, and managing summaries.
 
