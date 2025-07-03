@@ -1,13 +1,16 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 import Dashboard from './Dashboard';
 
 const mockUser = { username: 'testuser', userId: 'user-123' };
 
-jest.mock('./SubmissionForm', () => (props: any) => (
-  <div data-testid="submission-form-mock">SubmissionForm for {props.userId}</div>
-));
+vi.mock('./SubmissionForm', () => ({
+  default: (props: any) => (
+    <div data-testid="submission-form-mock">SubmissionForm for {props.userId}</div>
+  )
+}));
 
 describe('Dashboard', () => {
   it('renders greeting with username', () => {

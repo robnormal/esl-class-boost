@@ -9,5 +9,14 @@ export default defineConfig({
   },
   server: {
     port: 3000
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/setupTests.ts'],
+    globals: true,
+    env: {
+      DEV: 'false',
+      VITE_BACKEND_URL: 'http://localhost:3000'
+    }
   }
 })
