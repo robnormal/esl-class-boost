@@ -12,6 +12,9 @@ class Environment:
             raise ValueError(msg)
         return os.environ.get(name)
 
+    def has(self, name:str) -> bool:
+        return name in os.environ
+
     def is_prod(self):
         return self.require('ENVIRONMENT') == 'production'
 
