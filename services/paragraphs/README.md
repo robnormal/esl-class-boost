@@ -1,126 +1,144 @@
 # Paragraphs Service
 
-This service processes text submissions and generates learning paragraphs using AWS services (SQS, S3, DynamoDB) for queue management and storage.
+A microservice that extracts paragraphs from documents of various formats as
+part of the ESL Class Boost pipeline. It processes uploaded documents and converts them into
+JSON arrays of UTF-8 paragraph strings.
 
-## Prerequisites
+## Overview
 
-- Python 3.12 or higher
-- Docker (for running LocalStack)
-- AWS CLI (optional, for testing AWS services)
+The service:
+- Polls SQS for new upload notifications
+- Reads files uploaded to an S3 bucket
+- Extracts text in the form of paragraphs from uploaded documents
+- Uses OCR to extract text from images
+- Supports multiple file formats (PDF, Word, RTF, HTML, images, plain text)
+- Stores extracted paragraphs as JSON in S3
+- Updates submission status in DynamoDB
 
-## Local Development Setup
-
-### 1. Start LocalStack
-
-First, start LocalStack to emulate AWS services locally:
-
-```bash
-docker run --rm -it \
-  -p 4566:4566 \
-  -p 4571:4571 \
-  -e SERVICES=sqs,s3,dynamodb \
-  -e DEFAULT_REGION=us-east-2 \
-  -e AWS_ACCESS_KEY_ID=test \
-  -e AWS_SECRET_ACCESS_KEY=test \
-  localstack/localstack
+```
+SQS Queue → File Download → Paragraph Extraction → S3 Upload → DynamoDB Update
 ```
 
-### 2. Set Up Environment Variables
+## Installation
 
-Create a `.env` file in the service directory with the following variables:
+### Prerequisites
 
-```bash
-# AWS Configuration
-AWS_ACCESS_KEY_ID=test
-AWS_SECRET_ACCESS_KEY=test
-AWS_REGION=us-east-2
-AWS_ENDPOINT_URL=http://localhost:4566
+- Python 3.8+
+- Poetry
+- AWS credentials
+- Google Cloud credentials (for PDF processing and OCR)
 
-# Service Configuration
-ENVIRONMENT=dev
-SUBMISSIONS_BUCKET=rhr79-history-learning-submissions
-PARAGRAPHS_BUCKET=rhr79-history-learning-paragraphs
-```
+### Setup
 
-### 4. Run the Service
+1. Install dependencies:
+   ```bash
+   cd services/paragraphs
+   poetry install
+   ```
+2. Copy `.env.EXAMPLE` to `.env` and update variables for your environment.
+3. Set up Google Cloud Document AI:
+   - Create a Document AI processor in Google Cloud Console
+   - Download service account credentials
+   - Set the credentials as described in `.env.EXAMPLE`
 
-You can run the service in two ways:
+## Usage
 
-#### Native
-
-```bash
-pip install -r requirements.txt
-python main.py
-```
-
-#### Docker
-
-Build the container:
+### Running the Service
 
 ```bash
-# For production build
-pip-compile
-docker build -t paragraphs-service .
-
-# For local development with LocalStack
-pip-compile requirements.in ../../requirements-dev.in --output-file=requirements-dev.txt
-docker build -t paragraphs-service --build-arg REQUIREMENTS_FILE=requirements-dev.txt .
+cd services/paragraphs
+poetry run python src/main.py
 ```
 
-Run the container:
+The service will:
+1. Connect to the configured SQS queue
+2. Poll for file upload notifications
+3. Process files and extract paragraphs
+4. Upload results to S3 and update DynamoDB
+
+### Manual Processing
+
+To use the paragraph extraction functionality directly:
+
+```python
+from paragraph_extractor import extract_paragraphs
+
+# Extract paragraphs from a file
+paragraphs = extract_paragraphs('/path/to/document.pdf', min_length=100)
+print(f"Extracted {len(paragraphs)} paragraphs")
+```
+
+### Testing
+
+Run the test suite:
 ```bash
-docker run -d --env-file .env --name paragraphs-service paragraphs-service
+cd services/paragraphs
+poetry run pytest tests/
 ```
 
-## Testing LocalStack Integration
+### Paragraph Extraction Settings
 
-To verify that LocalStack is working correctly, you can use the following AWS CLI commands:
+- **Minimum Length**: Paragraphs shorter than 100 characters are filtered out by default
+- **Text Cleaning**: Normalizes whitespace and removes excessive line breaks
+- **Format Handling**: Each file type has specialized extraction logic
 
-```bash
-# Configure AWS CLI for LocalStack
-export AWS_ACCESS_KEY_ID=test
-export AWS_SECRET_ACCESS_KEY=test
-export AWS_DEFAULT_REGION=us-east-2
+## File Processing Details
 
-# Create the SQS queue
-aws --endpoint-url=http://localhost:4566 sqs create-queue \
-  --queue-name history-learning-paragraphs
+### PDF Processing
+- Uses Google Cloud Document AI Layout Parser
+- Handles complex layouts, multi-column text, and OCR
+- Maintains paragraph structure across page breaks
+- Reconstructs hyphenated words split across lines
 
-# Create S3 buckets
-aws --endpoint-url=http://localhost:4566 s3 mb s3://rhr79-history-learning-submissions
-aws --endpoint-url=http://localhost:4566 s3 mb s3://rhr79-history-learning-paragraphs
+### Word Document Processing
+- Primary: Uses `python-docx` library
+- Fallback: Uses `mammoth` for text extraction
+- Preserves paragraph structure from document formatting
 
-# List queues to verify
-aws --endpoint-url=http://localhost:4566 sqs list-queues
+### HTML Processing
+- Extracts text from `<p>` tags using BeautifulSoup
+- Ignores HTML formatting and focuses on content
 
-# List buckets to verify
-aws --endpoint-url=http://localhost:4566 s3 ls
+### Plain Text Processing
+- Splits on double newlines (`\n\n`)
+- Simple but effective for well-formatted text files
+
+## Output Format
+
+The service outputs JSON files containing arrays of paragraph strings:
+
+```json
+[
+  "This is the first paragraph extracted from the document. It contains meaningful content that meets the minimum length requirement.",
+  "This is the second paragraph with additional content and context.",
+  "..."
+]
 ```
 
-## Troubleshooting
+## Error Handling
 
-1. **Connection Issues**
-   - Ensure LocalStack is running (`docker ps` to check)
-   - Verify the endpoint URL is correct
-   - Check if port 4566 is accessible
+- **File Type Errors**: Unsupported file types raise `ValueError`
+- **Processing Errors**: Logged with full stack traces
+- **SQS Failures**: Messages are requeued for retry
+- **S3 Errors**: Failures are logged and submission status reflects error state
 
-2. **Authentication Errors**
-   - Confirm you're using the test credentials
-   - Verify environment variables are set correctly
+## Development
 
-3. **Queue/Bucket Not Found**
-   - Make sure you've created the queue and buckets in LocalStack
-   - Check the queue/bucket names match your configuration
+### Adding New File Types
 
-## Development Notes
+1. Create a new extraction function in `paragraph_extractor.py`
+2. Add the file extension to the `paragraphs_from_file()` function
+3. Add appropriate dependencies to `pyproject.toml`
+4. Create test fixtures and tests
 
-- The service uses the singleton pattern for AWS clients
-- LocalStack endpoints are automatically detected when `IS_LOCAL=true`
-- All AWS operations are logged for debugging purposes
-- The service runs as a non-root user in Docker for security
+## Monitoring
 
-## Additional Resources
+- CloudWatch logs (in AWS environments)
+- DynamoDB submission status updates
+- Logging
 
-- [LocalStack Documentation](https://docs.localstack.cloud/overview/)
-- [AWS SQS Documentation](https://docs.aws.amazon.com/sqs/)
-- [AWS S3 Documentation](https://docs.aws.amazon.com/s3/) 
+### Performance Considerations
+
+- PDF processing is slower due to AI analysis
+- Large files may require increased timeout settings
+- Consider file size limits for memory usage
