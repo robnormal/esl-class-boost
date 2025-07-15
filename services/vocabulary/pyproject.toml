@@ -13,5 +13,8 @@ build-backend = "poetry.core.masonry.api"
 python = "^3.8"
 nltk = "^3.0"
 wordfreq = "^3.0"
-python-dotenv = "^1.0"
 common = {path = "../../common", develop = true}
+
+[tool.poetry.group.dev.dependencies]
+python-dotenv = "^1.0"
+pytest = "^7.0"

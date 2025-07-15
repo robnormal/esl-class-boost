@@ -12,5 +12,8 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.dependencies]
 python = "^3.8"
 openai = "^1.0"
-python-dotenv = "^1.0"
 common = {path = "../../common", develop = true}
+
+[tool.poetry.group.dev.dependencies]
+python-dotenv = "^1.0"
+pytest = "^7.0"
